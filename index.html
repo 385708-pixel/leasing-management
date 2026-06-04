@@ -5,27 +5,22 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>DX不動産管理アプリ</title>
     
-    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
 
-　　<link rel="icon" type="image/png" href="icon.png">
+    <link rel="icon" type="image/png" href="icon.png">
+    <link rel="apple-touch-icon" href="icon.png">
 
-　　<link rel="apple-touch-icon" href="icon.png">
-
-　　<meta name="apple-mobile-web-app-capable" content="yes">
-　　<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-　　<meta name="apple-mobile-web-app-title" content="DX不動産管理">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="DX不動産管理">
     
-    <!-- React & ReactDOM -->
     <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
     
-    <!-- PropTypes, React-Is & Recharts -->
     <script src="https://unpkg.com/prop-types/prop-types.min.js"></script>
     <script src="https://unpkg.com/react-is/umd/react-is.production.min.js"></script>
     <script src="https://unpkg.com/recharts@2.12.0/umd/Recharts.js"></script>
     
-    <!-- Babel for in-browser JSX compilation -->
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 
     <style>
@@ -43,6 +38,8 @@
 
         // 指定されたGoogle Apps ScriptのWebアプリURL
         const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbwV0eb832JusrZT0Iwsue5x58YOnypR-qftiyAE62AEaQXN8aZ2RF_CRZyRiy3cLGnV/exec";
+        const STORAGE_KEY_PROPERTIES = "dx_realestate_properties";
+        const STORAGE_KEY_SETTINGS = "dx_realestate_settings";
 
         // --- アイコンコンポーネント (Lucide互換) ---
         const IconBase = ({ size = 24, className = "", children }) => (
@@ -311,31 +308,7 @@
         };
 
         // --- 初期サンプルデータ ---
-        const INITIAL_DATA = [
-            {
-                id: 'p1',
-                name: '川崎グリーンハイツ (201号室)',
-                status: 'occupied',
-                acquisitionPrice: 25000000,
-                assumedRent: 120000,
-                loan: { amount: 20000000, rate: 1.2, monthly: 60000, startDate: `${currentActualYear}-01-01` },
-                yearlyStats: {
-                [currentActualYear]: Array.from({ length: 12 }, (_, i) => ({
-                    month: i + 1,
-                    receiptDate: i + 1 <= currentActualMonth ? `${currentActualYear}-${String(i + 1).padStart(2, '0')}-25` : '',
-                    rentIncome: i + 1 <= currentActualMonth ? 120000 : 0,
-                    paymentDate: i + 1 <= currentActualMonth ? `${currentActualYear}-${String(i + 1).padStart(2, '0')}-27` : '',
-                    managementFee: 15000,
-                    repairFee: i === 2 ? 50000 : 0,
-                    taxPayment: [2, 5, 8, 11].includes(i) ? 35000 : 0,
-                    loanPayment: 60000,
-                    appliedLoanRate: 1.2,
-                    loanInterest: 20000
-                })),
-                [currentActualYear + 1]: Array.from({ length: 12 }, (_, i) => createEmptyMonthStat(currentActualYear + 1, i + 1, 20000000, 1.2, 60000, `${currentActualYear}-01-01`))
-                }
-            }
-        ];
+        const INITIAL_DATA = [];
 
         // --- ユーティリティ ---
         const getFiscalMonths = (fiscalYear, endMonth) => {
@@ -390,16 +363,49 @@
 
         // --- メインコンポーネント ---
         function App() {
-            const [appSettings, setAppSettings] = useState({
-                type: 'individual',
-                fiscalMonth: 12,
-                language: 'ja'
-            });
+            // LocalStorage から設定を読み込む
+            const loadSettings = () => {
+                const savedSettings = localStorage.getItem(STORAGE_KEY_SETTINGS);
+                if (savedSettings) {
+                    try {
+                        return JSON.parse(savedSettings);
+                    } catch (e) {
+                        console.error("設定の読み込みに失敗しました", e);
+                    }
+                }
+                return { type: 'individual', fiscalMonth: 12, language: 'ja' };
+            };
+
+            const [appSettings, setAppSettings] = useState(loadSettings());
+
+            // 設定が変更されたら LocalStorage に保存
+            useEffect(() => {
+                localStorage.setItem(STORAGE_KEY_SETTINGS, JSON.stringify(appSettings));
+            }, [appSettings]);
 
             // 翻訳関数
             const t = (key) => TRANSLATIONS[appSettings.language][key] || key;
 
-            const [properties, setProperties] = useState(INITIAL_DATA);
+            // LocalStorage から物件データを読み込む
+            const loadProperties = () => {
+                const savedProperties = localStorage.getItem(STORAGE_KEY_PROPERTIES);
+                if (savedProperties) {
+                    try {
+                        return JSON.parse(savedProperties);
+                    } catch (e) {
+                        console.error("物件データの読み込みに失敗しました", e);
+                    }
+                }
+                return INITIAL_DATA;
+            };
+
+            const [properties, setProperties] = useState(loadProperties());
+
+            // 物件データが変更されたら LocalStorage に保存
+            useEffect(() => {
+                localStorage.setItem(STORAGE_KEY_PROPERTIES, JSON.stringify(properties));
+            }, [properties]);
+
             const [currentView, setCurrentView] = useState('home');
             const [selectedPropertyId, setSelectedPropertyId] = useState(null);
             
@@ -1294,5 +1300,4 @@
     </script>
 </body>
 </html>
-</body>
 </html>
