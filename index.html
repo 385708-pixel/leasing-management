@@ -114,11 +114,10 @@
                 monthYen: "(月額 / 円)",
                 assumedRentNote: "未到来の月の予定収入として、見込み計算に使用されます。（入居中の場合のみ）",
                 loanInfo: "借入金情報",
-                loanDate: "融資日",
                 loanStartDate: "返済開始日",
-                loanTotalAmount: "融資総額 (円)",
+                loanBalance: "現在の借入残高 (円)",
                 baseInterestRate: "基準金利 (%)",
-                monthlyRepayment: "毎月返済額 (円)",
+                monthlyRepayment: "毎月の元金支払額 (円)",
                 save: "保存する",
                 register: "登録する",
                 incomeDashboard: "収支ダッシュボード",
@@ -148,17 +147,18 @@
                 repairFee: "修繕費 (円)",
                 taxPayment: "税金等 (円)",
                 loan: "ローン",
-                loanRepayment: "返済額 (円)",
+                loanRepayment: "元金支払額 (円)",
                 appliedInterest: "適用金利 (%)",
-                interestPortion: "うち利息 (円)",
+                interestPortion: "利息 (円)",
+                totalLoanPayment: "支払総額",
                 cancel: "キャンセル",
                 execute: "実行する",
                 deletePropTitle: "物件の削除",
                 deletePropMsg: "本当にこの物件を削除しますか？この操作は元に戻せません。",
                 bulkUpdateTitle: "一括更新",
-                bulkUpdateMsg: "全ての登録物件について、今月の入金日・支払日を前月から引き継ぎ、収入に「想定家賃」を、支出に「自動計算されたローン返済」を一括入力します。既存の内容は上書きされますがよろしいですか？",
+                bulkUpdateMsg: "全ての登録物件について、今月の入金日・支払日を前月から引き継ぎ、収入に「想定家賃」を、支出に「ローン返済のみ」を一括入力します。既存の内容は上書きされますがよろしいですか？",
                 autoFillTitle: "の一括入力",
-                autoFillMsg: "前月の入金日・支払日を引き継ぎ、収入に「想定家賃」を、支出に「自動計算されたローン返済（その他経費は0）」を自動入力します。既存の内容は上書きされますがよろしいですか？",
+                autoFillMsg: "前月の入金日・支払日を引き継ぎ、収入に「想定家賃」を、支出に「ローン返済のみ（その他経費は0）」を自動入力します。既存の内容は上書きされますがよろしいですか？",
                 languageSettings: "言語設定",
                 japanese: "日本語",
                 turkish: "トルコ語 (Türkçe)",
@@ -180,110 +180,6 @@
                 noData: "クラウドにデータがありません",
                 annualTotalIncome: "年間総収入",
                 annualNetIncome: "年間純額"
-            },
-            tr: {
-                appTitle: "DX Gayrimenkul",
-                addProperty: "Mülk Ekle",
-                appSettings: "Ayarlar",
-                overallOccupancy: "Doluluk Oranı",
-                totalStr: "Toplam",
-                items: "Adet",
-                occupied: "Dolu",
-                vacant: "Boş",
-                year: " Yıl",
-                month: ".Ay",
-                monthPortion: " Aylık",
-                bulkUpdate: "Toplu Güncelle",
-                totalRentIncome: "Toplam Kira Geliri",
-                overallTrend: "Genel Bilanço Eğilimi",
-                actualAndProjected: "Gerçekleşen ve Planlanan",
-                noProperties: "Kayıtlı mülk bulunmuyor.",
-                registerFromAdd: "Lütfen 'Mülk Ekle' kısmından kayıt olun.",
-                monthIncome: "Aylık Geliri",
-                dashboard: "Panoyu Aç",
-                corporateSettings: "Kurumsal / Mali Yıl Ayarları",
-                userType: "Kullanıcı Tipi",
-                individual: "Bireysel",
-                corporate: "Kurumsal",
-                fiscalMonthNote: "※Bireysel kullanıcılar için mali yıl otomatik olarak 12. ay (Ocak-Aralık) olarak belirlenir.",
-                corporateFiscalMonth: "Mali Yıl Başlangıç Ayı",
-                fiscalMonthOpt: ". Ay (Başlangıç:",
-                fiscalMonthDesc: "Mali ayı belirlediğinizde pano gösterimi mali yıl bazında güncellenir ve dönem başından itibaren 12 ay üzerinden hesaplanır.",
-                editProperty: "Mülk Bilgilerini Düzenle",
-                newProperty: "Yeni Mülk Kaydı",
-                propName: "Mülk Adı / Oda Numarası",
-                status: "Durum",
-                acquisitionPrice: "Alım Fiyatı (Yen)",
-                assumedRent: "Beklenen Kira",
-                monthYen: "(Aylık / Yen)",
-                assumedRentNote: "Gelecek aylar için tahmini gelir hesaplamasında kullanılır. (Sadece dolu olduğunda)",
-                loanInfo: "Kredi Bilgileri",
-                loanDate: "Kredi Tarihi",
-                loanStartDate: "Geri Ödeme Başlangıç Tarihi",
-                loanTotalAmount: "Toplam Kredi Tutarı (Yen)",
-                baseInterestRate: "Temel Faiz Oranı (%)",
-                monthlyRepayment: "Aylık Ödeme (Yen)",
-                save: "Kaydet",
-                register: "Kayıt Ol",
-                incomeDashboard: "Gelir Gider Panosu",
-                summary: "Özet",
-                ledger: "Kasa Defteri",
-                cumulativeCashFlow: "Nakit Akışı (Gerçekleşen)",
-                annualLanding: "Yıllık Beklenen (Tahmini dahil)",
-                incomeActProj: "Gelir (Gerçekleşen/Planlanan)",
-                expenseActProj: "Gider (Gerçekleşen/Planlanan)",
-                totalActProj: "Bilanço (Gerçekleşen/Planlanan)",
-                grossYield: "Brüt Getiri",
-                expected: "(Beklenen)",
-                netYield: "Net Getiri (NOI)",
-                annualSummary: "Yıllık Beklenen Özet",
-                operatingExpense: "Toplam İşletme Gideri",
-                outOfActual: "İçindeki Gerçekleşen:",
-                futureExclude: "Gelecek aylar planlanan olarak soluk renkte gösterilir.",
-                projected: "Planlanan",
-                income: "Gelir",
-                expense: "Gider",
-                oneButtonInput: "Tek Tuşla Doldur",
-                prevMonthInput: "(Önceki Tarih ve Min. Gider)",
-                receiptDate: "Alım Tarihi",
-                rentIncome: "Kira Geliri (Yen)",
-                paymentDate: "Ödeme Tarihi",
-                managementFee: "Yönetim Ücreti (Yen)",
-                repairFee: "Onarım Ücreti (Yen)",
-                taxPayment: "Vergiler vb. (Yen)",
-                loan: "Kredi",
-                loanRepayment: "Ödeme Tutarı (Yen)",
-                appliedInterest: "Uygulanan Faiz (%)",
-                interestPortion: "Faiz Payı (Yen)",
-                cancel: "İptal",
-                execute: "Çalıştır",
-                deletePropTitle: "Mülkü Sil",
-                deletePropMsg: "Bu mülkü gerçekten silmek istiyor musunuz? Bu işlem geri alınamaz.",
-                bulkUpdateTitle: "Toplu Güncelle",
-                bulkUpdateMsg: "Tüm mülkler için bu ayın gelirini 'Beklenen Kira', giderini ise otomatik hesaplanan kredi ödemesi olarak dolduracaktır. Üzerine yazılacaktır, onaylıyor musunuz?",
-                autoFillTitle: " Otomatik Doldur",
-                autoFillMsg: "Önceki ayın tarihlerini alarak, geliri 'Beklenen Kira' ve gideri otomatik hesaplanan kredi ödemesi olarak dolduracaktır. Üzerine yazılacaktır, onaylıyor musunuz?",
-                languageSettings: "Dil Ayarları",
-                japanese: "Japonca (日本語)",
-                turkish: "Türkçe",
-                actualDesc: "(Gerçekleşen)",
-                projectedDesc: "(Planlanan)",
-                totalBalance: "Bakiye",
-                fiscalYear: " Yılı",
-                monthlyIncomeShort: "Gelir:",
-                monthlyExpenseShort: "Gider:",
-                cloudSync: "Bulut Senkronizasyonu",
-                saveToCloud: "Buluta Kaydet",
-                loadFromCloud: "Buluttan Yükle",
-                saving: "Kaydediliyor...",
-                saveSuccess: "Buluta başarıyla kaydedildi.",
-                saveError: "Kaydetme başarısız oldu.",
-                loading: "Yükleniyor...",
-                loadSuccess: "Veriler başarıyla yüklendi.",
-                loadError: "Yükleme başarısız oldu.",
-                noData: "Bulutta veri bulunamadı.",
-                annualTotalIncome: "Yıllık Toplam Gelir",
-                annualNetIncome: "Yıllık Net Bilanço"
             }
         };
 
@@ -291,60 +187,62 @@
         const currentActualYear = new Date().getFullYear();
         const currentActualMonth = new Date().getMonth() + 1; // 1-12
 
-        // --- ローン計算ロジック（元利均等返済のシミュレーション） ---
-        const calculateMonthlyLoanInfo = (loanTotal, annualRate, monthlyPayment, startDateStr, targetYear, targetMonth) => {
-            if (!startDateStr || !loanTotal || !annualRate || !monthlyPayment) {
-                return { payment: 0, interest: 0, principal: 0 };
+        // --- ローン計算ロジック（元金均等返済のシミュレーション） ---
+        const calculateMonthlyLoanInfo = (loanTotal, annualRate, monthlyPrincipal, startDateStr, targetYear, targetMonth) => {
+            if (!startDateStr || !loanTotal || !annualRate || !monthlyPrincipal) {
+                return { principal: 0, interest: 0, total: 0 };
             }
             const start = new Date(startDateStr);
-            if (isNaN(start.getTime())) return { payment: 0, interest: 0, principal: 0 };
+            if (isNaN(start.getTime())) return { principal: 0, interest: 0, total: 0 };
 
             const startYear = start.getFullYear();
-            const startMonth = start.getMonth() + 1;
+            const startMonth = start.getMonth() + 1; // 1-12
             
-            // 返済開始からの経過月数 (0 = 返済初月)
+            // 返済開始からの経過月数 (0 = 返済開始月)
             const elapsedMonths = (targetYear - startYear) * 12 + (targetMonth - startMonth);
             
-            // まだ返済が始まっていない場合はすべて0
+            // まだ返済が始まっていない場合
             if (elapsedMonths < 0) {
-                return { payment: 0, interest: 0, principal: 0 };
+                return { principal: 0, interest: 0, total: 0 };
             }
 
             let balance = Number(loanTotal);
             const ratePerMonth = Number(annualRate) / 100 / 12;
-            const payment = Number(monthlyPayment);
-            let currentInterest = 0;
-            let currentPayment = 0;
-            let currentPrincipal = 0;
+            const principalPayment = Number(monthlyPrincipal);
 
-            // 対象月まで残高をシミュレーションして減らす
-            for (let i = 0; i <= elapsedMonths; i++) {
-                if (balance <= 0) {
-                    currentInterest = 0;
-                    currentPayment = 0;
-                    currentPrincipal = 0;
-                    break;
-                }
-                currentInterest = Math.round(balance * ratePerMonth);
-                // 最終月など、残高+利息が毎月返済額を下回る場合の調整
-                currentPayment = Math.min(payment, balance + currentInterest);
-                currentPrincipal = currentPayment - currentInterest;
-                balance -= currentPrincipal;
+            // 対象月の前の月まで残高を減らす（元金均等のため毎月一定額減る）
+            // ただし、経過月数分の元金を引いた結果がマイナスにならないよう調整
+            const totalPaidPrincipal = principalPayment * elapsedMonths;
+            balance = Math.max(0, balance - totalPaidPrincipal);
+
+            // 対象月の残高が0なら返済終了
+            if (balance <= 0) {
+                 return { principal: 0, interest: 0, total: 0 };
             }
 
-            return { payment: currentPayment, interest: currentInterest, principal: currentPrincipal };
+            // 今月の利息を計算
+            const currentInterest = Math.round(balance * ratePerMonth);
+            
+            // 今月の元金支払額（残高が毎月返済額を下回る最終回への対応）
+            const currentPrincipal = Math.min(principalPayment, balance);
+
+            return { 
+                principal: currentPrincipal, 
+                interest: currentInterest, 
+                total: currentPrincipal + currentInterest 
+            };
         };
 
         // 1ヶ月分の空データを作成する関数（自動計算適用）
-        const createEmptyMonthStat = (year, month, loanTotalAmount, loanRate, loanMonthly, loanStartDate) => {
-            const { payment, interest } = calculateMonthlyLoanInfo(loanTotalAmount, loanRate, loanMonthly, loanStartDate, year, month);
+        const createEmptyMonthStat = (year, month, loanTotalAmount, loanRate, loanMonthlyPrincipal, loanStartDate) => {
+            const { principal, interest } = calculateMonthlyLoanInfo(loanTotalAmount, loanRate, loanMonthlyPrincipal, loanStartDate, year, month);
             
             return {
                 month, 
                 receiptDate: '', rentIncome: 0, 
                 paymentDate: '', managementFee: 0, repairFee: 0, taxPayment: 0,
-                loanPayment: payment,
-                appliedLoanRate: payment > 0 ? loanRate : 0,
+                loanPayment: principal, // ここでのloanPaymentは「元金支払額」として扱う
+                appliedLoanRate: principal > 0 ? loanRate : 0,
                 loanInterest: interest
             };
         };
@@ -476,7 +374,7 @@
 
             const [formData, setFormData] = useState({ 
                 name: '', status: 'occupied', acquisitionPrice: '', assumedRent: '',
-                loanTotalAmount: '', loanRate: '', loanMonthly: '', loanDate: '', loanStartDate: ''
+                loanAmount: '', loanRate: '', loanMonthly: '', loanStartDate: ''
             });
 
             // --- クラウド保存・読み込みロジック ---
@@ -514,6 +412,7 @@
                     setSyncMessage(t('loadError'));
                 }
             };
+
 
             // --- 計算ロジック ---
             const overallSummary = useMemo(() => {
@@ -553,11 +452,13 @@
                     const isLastActual = index === lastActualIndex;
 
                     properties.forEach(p => {
-                        const loanTotal = p.loan.totalAmount || p.loan.amount; // 後方互換性
+                        const loanTotal = p.loan.totalAmount || p.loan.amount;
                         const yearStats = p.yearlyStats[year] || [];
                         const stat = yearStats.find(s => s.month === month) || createEmptyMonthStat(year, month, loanTotal, p.loan.rate, p.loan.monthly, p.loan.startDate);
                         
-                        const expense = Number(stat.managementFee) + Number(stat.repairFee) + Number(stat.taxPayment) + Number(stat.loanPayment);
+                        // 元金＋利息をローンの支払いとして計算
+                        const loanPaymentTotal = Number(stat.loanPayment) + Number(stat.loanInterest);
+                        const expense = Number(stat.managementFee) + Number(stat.repairFee) + Number(stat.taxPayment) + loanPaymentTotal;
                         let income = Number(stat.rentIncome);
                         if (!isPastOrCurrent && p.status === 'occupied' && income === 0) { income = p.assumedRent || 0; }
                         
@@ -604,9 +505,11 @@
                     const yearStats = selectedProperty.yearlyStats[year] || [];
                     const stat = yearStats.find(s => s.month === month) || createEmptyMonthStat(year, month, loanTotal, selectedProperty.loan.rate, selectedProperty.loan.monthly, selectedProperty.loan.startDate);
                     
-                    const loanPayment = Number(stat.loanPayment);
+                    // 元金＋利息をローンの支払いとして計算
+                    const loanPaymentTotal = Number(stat.loanPayment) + Number(stat.loanInterest);
                     const operatingExpense = Number(stat.managementFee) + Number(stat.repairFee) + Number(stat.taxPayment);
-                    const totalExpense = operatingExpense + loanPayment;
+                    const totalExpense = operatingExpense + loanPaymentTotal;
+                    
                     const isPastOrCurrent = index <= lastActualIndex;
                     const isLastActual = index === lastActualIndex;
 
@@ -646,16 +549,10 @@
                 const newProperty = {
                     id: selectedPropertyId || Date.now().toString(), name: formData.name, status: formData.status,
                     acquisitionPrice: Number(formData.acquisitionPrice), assumedRent: Number(formData.assumedRent),
-                    loan: { 
-                        totalAmount: Number(formData.loanTotalAmount), 
-                        rate: Number(formData.loanRate), 
-                        monthly: Number(formData.loanMonthly), 
-                        date: formData.loanDate, 
-                        startDate: formData.loanStartDate 
-                    },
+                    loan: { amount: Number(formData.loanAmount), rate: Number(formData.loanRate), monthly: Number(formData.loanMonthly), startDate: formData.loanStartDate },
                     yearlyStats: isNew ? { 
                         [currentActualYear]: Array.from({length: 12}, (_, i) => 
-                            createEmptyMonthStat(currentActualYear, i + 1, Number(formData.loanTotalAmount), Number(formData.loanRate), Number(formData.loanMonthly), formData.loanStartDate)
+                            createEmptyMonthStat(currentActualYear, i + 1, Number(formData.loanAmount), Number(formData.loanRate), Number(formData.loanMonthly), formData.loanStartDate)
                         ) 
                     } : selectedProperty.yearlyStats
                 };
@@ -681,7 +578,18 @@
                     const targetStat = { ...yearStats[monthIndex] };
                     if (field === 'receiptDate' || field === 'paymentDate') { targetStat[field] = value; } 
                     else { targetStat[field] = Number(value); }
-                    if (field === 'appliedLoanRate') { targetStat.loanInterest = Number(value) > 0 ? Math.round((loanTotal * (Number(value) / 100)) / 12) : 0; }
+
+                    // 適用金利が変更された場合の利息再計算
+                    if (field === 'appliedLoanRate') { 
+                        const rate = Number(value);
+                        if (rate > 0) {
+                            // 簡易的にその月の残高を再計算して利息を出す（※本来は正確な残高推移が必要）
+                            const { interest } = calculateMonthlyLoanInfo(loanTotal, rate, p.loan.monthly, p.loan.startDate, targetYear, targetMonth);
+                            targetStat.loanInterest = interest;
+                        } else {
+                            targetStat.loanInterest = 0;
+                        }
+                    }
                     
                     yearStats[monthIndex] = targetStat;
                     return { ...p, yearlyStats: { ...p.yearlyStats, [targetYear]: yearStats } };
@@ -715,12 +623,12 @@
                 };
 
                 const loanTotal = selectedProperty.loan.totalAmount || selectedProperty.loan.amount;
-                const { payment, interest } = calculateMonthlyLoanInfo(loanTotal, selectedProperty.loan.rate, selectedProperty.loan.monthly, selectedProperty.loan.startDate, currentYear, currentMonth);
+                const { principal, interest } = calculateMonthlyLoanInfo(loanTotal, selectedProperty.loan.rate, selectedProperty.loan.monthly, selectedProperty.loan.startDate, currentYear, currentMonth);
 
                 const updatedStat = {
                     ...stat, receiptDate: calculateSafeDate(prevStat?.receiptDate), rentIncome: selectedProperty.assumedRent || 0,
                     paymentDate: calculateSafeDate(prevStat?.paymentDate), managementFee: 0, repairFee: 0, taxPayment: 0,
-                    loanPayment: payment, appliedLoanRate: payment > 0 ? (selectedProperty.loan.rate || 0) : 0,
+                    loanPayment: principal, appliedLoanRate: principal > 0 ? (selectedProperty.loan.rate || 0) : 0,
                     loanInterest: interest
                 };
 
@@ -759,12 +667,12 @@
                     };
 
                     const loanTotal = p.loan.totalAmount || p.loan.amount;
-                    const { payment, interest } = calculateMonthlyLoanInfo(loanTotal, p.loan.rate, p.loan.monthly, p.loan.startDate, homeTargetYear, homeTargetMonth);
+                    const { principal, interest } = calculateMonthlyLoanInfo(loanTotal, p.loan.rate, p.loan.monthly, p.loan.startDate, homeTargetYear, homeTargetMonth);
 
                     const updatedStat = {
                         month: homeTargetMonth, receiptDate: calculateSafeDate(prevStat?.receiptDate), rentIncome: p.assumedRent || 0,
                         paymentDate: calculateSafeDate(prevStat?.paymentDate), managementFee: 0, repairFee: 0, taxPayment: 0,
-                        loanPayment: payment, appliedLoanRate: payment > 0 ? (p.loan.rate || 0) : 0,
+                        loanPayment: principal, appliedLoanRate: principal > 0 ? (p.loan.rate || 0) : 0,
                         loanInterest: interest
                     };
 
@@ -781,12 +689,11 @@
                     setSelectedPropertyId(property.id);
                     setFormData({ 
                         name: property.name, status: property.status || 'occupied', acquisitionPrice: property.acquisitionPrice, assumedRent: property.assumedRent || '', 
-                        loanTotalAmount: property.loan.totalAmount || property.loan.amount || '', loanRate: property.loan.rate, loanMonthly: property.loan.monthly, 
-                        loanDate: property.loan.date || '', loanStartDate: property.loan.startDate || '' 
+                        loanAmount: property.loan.amount || '', loanRate: property.loan.rate, loanMonthly: property.loan.monthly, loanStartDate: property.loan.startDate || '' 
                     });
                 } else {
                     setSelectedPropertyId(null);
-                    setFormData({ name: '', status: 'occupied', acquisitionPrice: '', assumedRent: '', loanTotalAmount: '', loanRate: '', loanMonthly: '', loanDate: '', loanStartDate: '' });
+                    setFormData({ name: '', status: 'occupied', acquisitionPrice: '', assumedRent: '', loanAmount: '', loanRate: '', loanMonthly: '', loanStartDate: '' });
                 }
                 setCurrentView('form');
             };
@@ -1077,29 +984,23 @@
                     <input required type="number" min="0" value={formData.assumedRent} onChange={e => setFormData({...formData, assumedRent: e.target.value})} className="w-full sm:w-1/2 border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 outline-none font-bold text-blue-700" placeholder="120000" />
                     </div>
 
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-4 border-t border-gray-100">
-                    <div className="sm:col-span-2"><label className="block text-sm font-bold text-gray-700">{t('loanInfo')}</label></div>
-                    <div>
-                        <label className="block text-xs text-gray-500 mb-1">{t('loanDate')}</label>
-                        <input type="date" value={formData.loanDate} onChange={e => setFormData({...formData, loanDate: e.target.value})} className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-indigo-500 outline-none" />
-                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 pt-4 border-t border-gray-100">
+                    <div className="sm:col-span-2 lg:col-span-4"><label className="block text-sm font-bold text-gray-700">{t('loanInfo')}</label></div>
                     <div>
                         <label className="block text-xs text-gray-500 mb-1">{t('loanStartDate')}</label>
                         <input type="date" value={formData.loanStartDate} onChange={e => setFormData({...formData, loanStartDate: e.target.value})} className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-indigo-500 outline-none" />
                     </div>
-                    <div className="sm:col-span-2 grid grid-cols-1 sm:grid-cols-3 gap-4">
-                        <div>
-                            <label className="block text-xs text-gray-500 mb-1">{t('loanTotalAmount')}</label>
-                            <input required type="number" min="0" value={formData.loanTotalAmount} onChange={e => setFormData({...formData, loanTotalAmount: e.target.value})} className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-indigo-500 outline-none" />
-                        </div>
-                        <div>
-                            <label className="block text-xs text-gray-500 mb-1">{t('baseInterestRate')}</label>
-                            <input required type="number" min="0" step="0.01" value={formData.loanRate} onChange={e => setFormData({...formData, loanRate: e.target.value})} className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-indigo-500 outline-none" />
-                        </div>
-                        <div>
-                            <label className="block text-xs text-gray-500 mb-1">{t('monthlyRepayment')}</label>
-                            <input required type="number" min="0" value={formData.loanMonthly} onChange={e => setFormData({...formData, loanMonthly: e.target.value})} className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-indigo-500 outline-none" />
-                        </div>
+                    <div>
+                        <label className="block text-xs text-gray-500 mb-1">{t('loanBalance')}</label>
+                        <input required type="number" min="0" value={formData.loanAmount} onChange={e => setFormData({...formData, loanAmount: e.target.value})} className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-indigo-500 outline-none" />
+                    </div>
+                    <div>
+                        <label className="block text-xs text-gray-500 mb-1">{t('baseInterestRate')}</label>
+                        <input required type="number" min="0" step="0.01" value={formData.loanRate} onChange={e => setFormData({...formData, loanRate: e.target.value})} className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-indigo-500 outline-none" />
+                    </div>
+                    <div>
+                        <label className="block text-xs text-gray-500 mb-1">{t('monthlyRepayment')}</label>
+                        <input required type="number" min="0" value={formData.loanMonthly} onChange={e => setFormData({...formData, loanMonthly: e.target.value})} className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-indigo-500 outline-none" />
                     </div>
                     </div>
                     <div className="pt-6">
@@ -1253,7 +1154,9 @@
                         {performanceData.tableData.map((stat) => {
                             const statId = `${stat.actualYear}-${stat.month}`;
                             const isExpanded = expandedStatId === statId;
-                            const totalExpense = Number(stat.managementFee) + Number(stat.repairFee) + Number(stat.taxPayment) + Number(stat.loanPayment);
+                            // 支払総額は「元金 + 利息 + その他経費」
+                            const loanTotalPayment = Number(stat.loanPayment) + Number(stat.loanInterest);
+                            const totalExpense = Number(stat.managementFee) + Number(stat.repairFee) + Number(stat.taxPayment) + loanTotalPayment;
                             
                             return (
                             <div key={statId} className={`rounded-xl shadow-sm border overflow-hidden transition-all ${stat.isPastOrCurrent ? 'bg-white border-gray-200' : 'bg-gray-50 border-gray-100 opacity-70'}`}>
@@ -1339,6 +1242,11 @@
                                         <div className="col-span-2 sm:col-span-1">
                                         <label className="block text-[10px] text-gray-500 mb-1">{t('interestPortion')}</label>
                                         <input type="number" value={stat.loanInterest} onChange={(e) => handleUpdateStat(stat.actualYear, stat.month, 'loanInterest', e.target.value)} className="w-full px-3 py-2 border border-orange-200 rounded-lg focus:ring-2 focus:ring-orange-500 outline-none text-sm bg-white" />
+                                        </div>
+                                        {/* 支払総額の表示 */}
+                                        <div className="col-span-2 sm:col-span-3 pt-2 border-t border-orange-200/50 flex justify-between items-center">
+                                            <span className="text-[10px] font-bold text-orange-800">{t('totalLoanPayment')}</span>
+                                            <span className="font-black text-orange-600">¥{loanTotalPayment.toLocaleString()}</span>
                                         </div>
                                     </div>
                                     </div>
