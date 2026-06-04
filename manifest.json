@@ -1,0 +1,15 @@
+{
+  "name": "賃貸収入管理アプリ",
+  "short_name": "賃貸管理",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#317EFB",
+  "icons": [
+    {
+      "src": "./images/icon.png",
+      "sizes": "192x192 512x512",
+      "type": "image/png"
+    }
+  ]
+}
