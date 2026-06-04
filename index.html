@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>DX不動産管理アプリ</title>
     
+    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
 
     <link rel="icon" type="image/png" href="icon.png">
@@ -14,13 +15,16 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="DX不動産管理">
     
+    <!-- React & ReactDOM -->
     <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
     
+    <!-- PropTypes, React-Is & Recharts -->
     <script src="https://unpkg.com/prop-types/prop-types.min.js"></script>
     <script src="https://unpkg.com/react-is/umd/react-is.production.min.js"></script>
     <script src="https://unpkg.com/recharts@2.12.0/umd/Recharts.js"></script>
     
+    <!-- Babel for in-browser JSX compilation -->
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 
     <style>
@@ -172,7 +176,9 @@
                 loading: "読み込み中...",
                 loadSuccess: "データを読み込みました",
                 loadError: "読み込みに失敗しました",
-                noData: "クラウドにデータがありません"
+                noData: "クラウドにデータがありません",
+                annualTotalIncome: "年間総収入",
+                annualNetIncome: "年間純額"
             },
             tr: {
                 appTitle: "DX Gayrimenkul",
@@ -273,7 +279,9 @@
                 loading: "Yükleniyor...",
                 loadSuccess: "Veriler başarıyla yüklendi.",
                 loadError: "Yükleme başarısız oldu.",
-                noData: "Bulutta veri bulunamadı."
+                noData: "Bulutta veri bulunamadı.",
+                annualTotalIncome: "Yıllık Toplam Gelir",
+                annualNetIncome: "Yıllık Net Bilanço"
             }
         };
 
@@ -285,7 +293,7 @@
         const checkLoanActive = (year, month, startDateStr) => {
             if (!startDateStr) return true;
             const start = new Date(startDateStr);
-            if (isNaN(start.getTime())) return true; // 日付が不正な場合はデフォルトで有効
+            if (isNaN(start.getTime())) return true;
             const startYearMonth = start.getFullYear() * 12 + start.getMonth();
             const currentYearMonth = year * 12 + (month - 1);
             return currentYearMonth >= startYearMonth;
@@ -417,19 +425,20 @@
             const [homeTargetYear, setHomeTargetYear] = useState(currentActualYear);
             const [homeTargetMonth, setHomeTargetMonth] = useState(currentActualMonth);
 
-            const initialFiscalYear = useMemo(() => {
+            // カレンダー月から、表示対象の「事業年度」を計算する
+            const currentHomeFiscalYear = useMemo(() => {
                 const startMonth = (appSettings.fiscalMonth % 12) + 1;
-                if (startMonth === 1) return currentActualYear;
-                return currentActualMonth < startMonth ? currentActualYear - 1 : currentActualYear;
-            }, [appSettings.fiscalMonth]);
+                if (startMonth === 1) return homeTargetYear;
+                return homeTargetMonth < startMonth ? homeTargetYear - 1 : homeTargetYear;
+            }, [homeTargetYear, homeTargetMonth, appSettings.fiscalMonth]);
 
-            const [selectedYear, setSelectedYear] = useState(initialFiscalYear);
+            const [selectedYear, setSelectedYear] = useState(currentHomeFiscalYear);
             const [detailTab, setDetailTab] = useState('summary');
             const [expandedStatId, setExpandedStatId] = useState(null);
             
             useEffect(() => {
-                setSelectedYear(initialFiscalYear);
-            }, [initialFiscalYear]);
+                setSelectedYear(currentHomeFiscalYear);
+            }, [currentHomeFiscalYear]);
 
             const [formData, setFormData] = useState({ 
                 name: '', status: 'occupied', acquisitionPrice: '', assumedRent: '',
@@ -442,8 +451,8 @@
                 try {
                     await fetch(WEB_APP_URL, {
                         method: 'POST',
-                        mode: 'no-cors', // CORSエラーを回避
-                        headers: { 'Content-Type': 'text/plain;charset=utf-8' }, // プリフライト回避
+                        mode: 'no-cors',
+                        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
                         body: JSON.stringify(properties)
                     });
                     setSyncMessage(t('saveSuccess'));
@@ -472,7 +481,6 @@
                 }
             };
 
-
             // --- 計算ロジック ---
             const overallSummary = useMemo(() => {
                 if (properties.length === 0) return { occupancyRate: 0, targetMonthTotalIncome: 0 };
@@ -481,23 +489,28 @@
                 
                 let targetMonthTotalIncome = 0;
                 properties.forEach(p => {
-                const stats = p.yearlyStats[homeTargetYear];
-                if (stats) {
-                    const targetStat = stats.find(s => s.month === homeTargetMonth);
-                    if (targetStat) targetMonthTotalIncome += Number(targetStat.rentIncome);
-                }
+                    const stats = p.yearlyStats[homeTargetYear];
+                    if (stats) {
+                        const targetStat = stats.find(s => s.month === homeTargetMonth);
+                        if (targetStat) targetMonthTotalIncome += Number(targetStat.rentIncome);
+                    }
                 });
                 return { occupancyRate, targetMonthTotalIncome };
             }, [properties, homeTargetYear, homeTargetMonth]);
 
-            const overallChartData = useMemo(() => {
-                if (properties.length === 0) return [];
-                const fiscalMonths = getFiscalMonths(homeTargetYear, appSettings.fiscalMonth);
+            // グラフ用のデータと年間総額・純額をまとめて計算
+            const overallChartInfo = useMemo(() => {
+                if (properties.length === 0) return { chartData: [], annualTotalIncome: 0, annualNetIncome: 0 };
+                
+                const fiscalMonths = getFiscalMonths(currentHomeFiscalYear, appSettings.fiscalMonth);
                 const chartData = [];
                 let lastActualIndex = -1;
                 fiscalMonths.forEach(({ year, month }, index) => {
                     if (year < currentActualYear || (year === currentActualYear && month <= currentActualMonth)) { lastActualIndex = index; }
                 });
+
+                let annualTotalIncome = 0;
+                let annualTotalExpense = 0;
 
                 fiscalMonths.forEach(({ year, month }, index) => {
                     let totalIncome = 0; let totalExpense = 0;
@@ -511,9 +524,13 @@
                         const expense = Number(stat.managementFee) + Number(stat.repairFee) + Number(stat.taxPayment) + Number(stat.loanPayment);
                         let income = Number(stat.rentIncome);
                         if (!isPastOrCurrent && p.status === 'occupied' && income === 0) { income = p.assumedRent || 0; }
+                        
                         if (isPastOrCurrent) { totalIncome += income; totalExpense += expense; } 
                         else { projectedTotalIncome += income; projectedTotalExpense += expense; }
                     });
+
+                    annualTotalIncome += totalIncome + projectedTotalIncome;
+                    annualTotalExpense += totalExpense + projectedTotalExpense;
 
                     const total = (isPastOrCurrent ? totalIncome : projectedTotalIncome) - (isPastOrCurrent ? totalExpense : projectedTotalExpense);
 
@@ -523,8 +540,13 @@
                         chartData.push({ label: `${month}${t('month')}`, projectedIncome: projectedTotalIncome, projectedExpense: -projectedTotalExpense, actualTotal: null, projectedTotal: total });
                     }
                 });
-                return chartData;
-            }, [properties, homeTargetYear, appSettings.fiscalMonth, appSettings.language]);
+                
+                return { 
+                    chartData, 
+                    annualTotalIncome, 
+                    annualNetIncome: annualTotalIncome - annualTotalExpense 
+                };
+            }, [properties, currentHomeFiscalYear, appSettings.fiscalMonth, appSettings.language]);
 
             const selectedProperty = useMemo(() => properties.find(p => p.id === selectedPropertyId), [properties, selectedPropertyId]);
 
@@ -775,13 +797,25 @@
 
                 {properties.length > 0 && (
                     <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-5 mb-8">
-                    <h2 className="text-sm font-bold text-gray-700 mb-4 flex items-center justify-between">
-                        {homeTargetYear}{t('fiscalYear')} {t('overallTrend')}
-                        <span className="text-[10px] font-normal text-gray-400">{t('actualAndProjected')}</span>
-                    </h2>
+                    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-3">
+                        <h2 className="text-sm font-bold text-gray-700 flex items-center">
+                            {currentHomeFiscalYear}{t('fiscalYear')} {t('overallTrend')}
+                            <span className="text-[10px] font-normal text-gray-400 ml-2">{t('actualAndProjected')}</span>
+                        </h2>
+                        <div className="flex flex-wrap gap-4 bg-gray-50 px-4 py-2 rounded-xl border border-gray-100">
+                            <div className="text-xs">
+                                <span className="text-gray-500 block sm:inline mb-0.5 sm:mb-0 mr-1">{t('annualTotalIncome')}:</span>
+                                <span className="font-bold text-slate-800 text-sm">¥{overallChartInfo.annualTotalIncome.toLocaleString()}</span>
+                            </div>
+                            <div className="text-xs border-l border-gray-200 pl-4">
+                                <span className="text-gray-500 block sm:inline mb-0.5 sm:mb-0 mr-1">{t('annualNetIncome')}:</span>
+                                <span className="font-black text-indigo-600 text-sm">¥{overallChartInfo.annualNetIncome.toLocaleString()}</span>
+                            </div>
+                        </div>
+                    </div>
                     <div className="h-[200px] w-full">
                         <ResponsiveContainer width="100%" height="100%">
-                        <ComposedChart data={overallChartData} margin={{ top: 10, right: 0, left: 0, bottom: 0 }}>
+                        <ComposedChart data={overallChartInfo.chartData} margin={{ top: 10, right: 0, left: 0, bottom: 0 }}>
                             <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
                             <XAxis dataKey="label" axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#64748b' }} dy={10} />
                             <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#64748b' }} tickFormatter={(val) => val === 0 ? '0' : `${Math.abs(val) / 10000}万`} width={40} />
@@ -1299,5 +1333,4 @@
         root.render(<App />);
     </script>
 </body>
-</html>
 </html>
