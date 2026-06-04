@@ -105,6 +105,7 @@
                 monthYen: "(月額 / 円)",
                 assumedRentNote: "未到来の月の予定収入として、見込み計算に使用されます。（入居中の場合のみ）",
                 loanInfo: "借入金情報",
+                loanStartDate: "返済開始日",
                 loanBalance: "現在の借入残高 (円)",
                 baseInterestRate: "基準金利 (%)",
                 monthlyRepayment: "毎月返済額 (円)",
@@ -205,6 +206,7 @@
                 monthYen: "(Aylık / Yen)",
                 assumedRentNote: "Gelecek aylar için tahmini gelir hesaplamasında kullanılır. (Sadece dolu olduğunda)",
                 loanInfo: "Kredi Bilgileri",
+                loanStartDate: "Geri Ödeme Başlangıç Tarihi",
                 loanBalance: "Mevcut Kredi Bakiyesi (Yen)",
                 baseInterestRate: "Temel Faiz Oranı (%)",
                 monthlyRepayment: "Aylık Ödeme (Yen)",
@@ -274,17 +276,28 @@
         const currentActualYear = new Date().getFullYear();
         const currentActualMonth = new Date().getMonth() + 1; // 1-12
 
+        // 指定の月がローン返済開始月以降かどうかを判定する関数
+        const checkLoanActive = (year, month, startDateStr) => {
+            if (!startDateStr) return true;
+            const start = new Date(startDateStr);
+            if (isNaN(start.getTime())) return true; // 日付が不正な場合はデフォルトで有効
+            const startYearMonth = start.getFullYear() * 12 + start.getMonth();
+            const currentYearMonth = year * 12 + (month - 1);
+            return currentYearMonth >= startYearMonth;
+        };
+
         // 1ヶ月分の空データを作成する関数
-        const createEmptyMonthStat = (month, loanAmount, loanRate, loanMonthly) => {
-            const estimatedInterest = loanAmount > 0 && loanRate > 0 
+        const createEmptyMonthStat = (year, month, loanAmount, loanRate, loanMonthly, loanStartDate) => {
+            const loanActive = checkLoanActive(year, month, loanStartDate);
+            const estimatedInterest = loanActive && loanAmount > 0 && loanRate > 0 
                 ? Math.round((loanAmount * (loanRate / 100)) / 12) 
                 : 0;
             return {
                 month, 
                 receiptDate: '', rentIncome: 0, 
                 paymentDate: '', managementFee: 0, repairFee: 0, taxPayment: 0,
-                loanPayment: loanMonthly || 0,
-                appliedLoanRate: loanRate || 0,
+                loanPayment: loanActive ? (loanMonthly || 0) : 0,
+                appliedLoanRate: loanActive ? (loanRate || 0) : 0,
                 loanInterest: estimatedInterest
             };
         };
@@ -297,7 +310,7 @@
                 status: 'occupied',
                 acquisitionPrice: 25000000,
                 assumedRent: 120000,
-                loan: { amount: 20000000, rate: 1.2, monthly: 60000 },
+                loan: { amount: 20000000, rate: 1.2, monthly: 60000, startDate: `${currentActualYear}-01-01` },
                 yearlyStats: {
                 [currentActualYear]: Array.from({ length: 12 }, (_, i) => ({
                     month: i + 1,
@@ -311,7 +324,7 @@
                     appliedLoanRate: 1.2,
                     loanInterest: 20000
                 })),
-                [currentActualYear + 1]: Array.from({ length: 12 }, (_, i) => createEmptyMonthStat(i + 1, 20000000, 1.2, 60000))
+                [currentActualYear + 1]: Array.from({ length: 12 }, (_, i) => createEmptyMonthStat(currentActualYear + 1, i + 1, 20000000, 1.2, 60000, `${currentActualYear}-01-01`))
                 }
             }
         ];
@@ -406,7 +419,7 @@
 
             const [formData, setFormData] = useState({ 
                 name: '', status: 'occupied', acquisitionPrice: '', assumedRent: '',
-                loanAmount: '', loanRate: '', loanMonthly: '' 
+                loanAmount: '', loanRate: '', loanMonthly: '', loanStartDate: ''
             });
 
             // --- クラウド保存・読み込みロジック ---
@@ -480,7 +493,7 @@
 
                     properties.forEach(p => {
                         const yearStats = p.yearlyStats[year] || [];
-                        const stat = yearStats.find(s => s.month === month) || createEmptyMonthStat(month, p.loan.amount, p.loan.rate, p.loan.monthly);
+                        const stat = yearStats.find(s => s.month === month) || createEmptyMonthStat(year, month, p.loan.amount, p.loan.rate, p.loan.monthly, p.loan.startDate);
                         const expense = Number(stat.managementFee) + Number(stat.repairFee) + Number(stat.taxPayment) + Number(stat.loanPayment);
                         let income = Number(stat.rentIncome);
                         if (!isPastOrCurrent && p.status === 'occupied' && income === 0) { income = p.assumedRent || 0; }
@@ -515,7 +528,7 @@
 
                 fiscalMonths.forEach(({ year, month }, index) => {
                     const yearStats = selectedProperty.yearlyStats[year] || [];
-                    const stat = yearStats.find(s => s.month === month) || createEmptyMonthStat(month, selectedProperty.loan.amount, selectedProperty.loan.rate, selectedProperty.loan.monthly);
+                    const stat = yearStats.find(s => s.month === month) || createEmptyMonthStat(year, month, selectedProperty.loan.amount, selectedProperty.loan.rate, selectedProperty.loan.monthly, selectedProperty.loan.startDate);
                     
                     const loanPayment = Number(stat.loanPayment);
                     const operatingExpense = Number(stat.managementFee) + Number(stat.repairFee) + Number(stat.taxPayment);
@@ -559,8 +572,8 @@
                 const newProperty = {
                     id: selectedPropertyId || Date.now().toString(), name: formData.name, status: formData.status,
                     acquisitionPrice: Number(formData.acquisitionPrice), assumedRent: Number(formData.assumedRent),
-                    loan: { amount: Number(formData.loanAmount), rate: Number(formData.loanRate), monthly: Number(formData.loanMonthly) },
-                    yearlyStats: isNew ? { [currentActualYear]: Array.from({length: 12}, (_, i) => createEmptyMonthStat(i + 1, Number(formData.loanAmount), Number(formData.loanRate), Number(formData.loanMonthly))) } : selectedProperty.yearlyStats
+                    loan: { amount: Number(formData.loanAmount), rate: Number(formData.loanRate), monthly: Number(formData.loanMonthly), startDate: formData.loanStartDate },
+                    yearlyStats: isNew ? { [currentActualYear]: Array.from({length: 12}, (_, i) => createEmptyMonthStat(currentActualYear, i + 1, Number(formData.loanAmount), Number(formData.loanRate), Number(formData.loanMonthly), formData.loanStartDate)) } : selectedProperty.yearlyStats
                 };
                 setProperties(isNew ? [...properties, newProperty] : properties.map(p => p.id === selectedPropertyId ? newProperty : p));
                 setCurrentView('home');
@@ -576,7 +589,7 @@
             const handleUpdateStat = (targetYear, targetMonth, field, value) => {
                 const updatedProperties = properties.map(p => {
                     if (p.id !== selectedProperty.id) return p;
-                    let yearStats = p.yearlyStats[targetYear] ? [...p.yearlyStats[targetYear]] : Array.from({length: 12}, (_, i) => createEmptyMonthStat(i + 1, p.loan.amount, p.loan.rate, p.loan.monthly));
+                    let yearStats = p.yearlyStats[targetYear] ? [...p.yearlyStats[targetYear]] : Array.from({length: 12}, (_, i) => createEmptyMonthStat(targetYear, i + 1, p.loan.amount, p.loan.rate, p.loan.monthly, p.loan.startDate));
                     const monthIndex = yearStats.findIndex(s => s.month === targetMonth);
                     if (monthIndex === -1) return p;
 
@@ -616,16 +629,17 @@
                     return '';
                 };
 
+                const loanActive = checkLoanActive(currentYear, currentMonth, selectedProperty.loan.startDate);
                 const updatedStat = {
                     ...stat, receiptDate: calculateSafeDate(prevStat?.receiptDate), rentIncome: selectedProperty.assumedRent || 0,
                     paymentDate: calculateSafeDate(prevStat?.paymentDate), managementFee: 0, repairFee: 0, taxPayment: 0,
-                    loanPayment: selectedProperty.loan.monthly || 0, appliedLoanRate: selectedProperty.loan.rate || 0,
-                    loanInterest: selectedProperty.loan.amount > 0 && selectedProperty.loan.rate > 0 ? Math.round((selectedProperty.loan.amount * (selectedProperty.loan.rate / 100)) / 12) : 0
+                    loanPayment: loanActive ? (selectedProperty.loan.monthly || 0) : 0, appliedLoanRate: loanActive ? (selectedProperty.loan.rate || 0) : 0,
+                    loanInterest: loanActive && selectedProperty.loan.amount > 0 && selectedProperty.loan.rate > 0 ? Math.round((selectedProperty.loan.amount * (selectedProperty.loan.rate / 100)) / 12) : 0
                 };
 
                 const updatedProperties = properties.map(p => {
                     if (p.id !== selectedProperty.id) return p;
-                    let yearStats = p.yearlyStats[currentYear] ? [...p.yearlyStats[currentYear]] : Array.from({length: 12}, (_, i) => createEmptyMonthStat(i + 1, p.loan.amount, p.loan.rate, p.loan.monthly));
+                    let yearStats = p.yearlyStats[currentYear] ? [...p.yearlyStats[currentYear]] : Array.from({length: 12}, (_, i) => createEmptyMonthStat(currentYear, i + 1, p.loan.amount, p.loan.rate, p.loan.monthly, p.loan.startDate));
                     const monthIndex = yearStats.findIndex(s => s.month === currentMonth);
                     if (monthIndex > -1) { yearStats[monthIndex] = updatedStat; }
                     return { ...p, yearlyStats: { ...p.yearlyStats, [currentYear]: yearStats } };
@@ -657,14 +671,15 @@
                         return '';
                     };
 
+                    const loanActive = checkLoanActive(homeTargetYear, homeTargetMonth, p.loan.startDate);
                     const updatedStat = {
                         month: homeTargetMonth, receiptDate: calculateSafeDate(prevStat?.receiptDate), rentIncome: p.assumedRent || 0,
                         paymentDate: calculateSafeDate(prevStat?.paymentDate), managementFee: 0, repairFee: 0, taxPayment: 0,
-                        loanPayment: p.loan.monthly || 0, appliedLoanRate: p.loan.rate || 0,
-                        loanInterest: p.loan.amount > 0 && p.loan.rate > 0 ? Math.round((p.loan.amount * (p.loan.rate / 100)) / 12) : 0
+                        loanPayment: loanActive ? (p.loan.monthly || 0) : 0, appliedLoanRate: loanActive ? (p.loan.rate || 0) : 0,
+                        loanInterest: loanActive && p.loan.amount > 0 && p.loan.rate > 0 ? Math.round((p.loan.amount * (p.loan.rate / 100)) / 12) : 0
                     };
 
-                    let yearStats = p.yearlyStats[homeTargetYear] ? [...p.yearlyStats[homeTargetYear]] : Array.from({length: 12}, (_, i) => createEmptyMonthStat(i + 1, p.loan.amount, p.loan.rate, p.loan.monthly));
+                    let yearStats = p.yearlyStats[homeTargetYear] ? [...p.yearlyStats[homeTargetYear]] : Array.from({length: 12}, (_, i) => createEmptyMonthStat(homeTargetYear, i + 1, p.loan.amount, p.loan.rate, p.loan.monthly, p.loan.startDate));
                     const monthIndex = yearStats.findIndex(s => s.month === homeTargetMonth);
                     if (monthIndex > -1) { yearStats[monthIndex] = updatedStat; }
                     return { ...p, yearlyStats: { ...p.yearlyStats, [homeTargetYear]: yearStats } };
@@ -675,10 +690,13 @@
             const openForm = (property = null) => {
                 if (property) {
                     setSelectedPropertyId(property.id);
-                    setFormData({ name: property.name, status: property.status || 'occupied', acquisitionPrice: property.acquisitionPrice, assumedRent: property.assumedRent || '', loanAmount: property.loan.amount, loanRate: property.loan.rate, loanMonthly: property.loan.monthly });
+                    setFormData({ 
+                        name: property.name, status: property.status || 'occupied', acquisitionPrice: property.acquisitionPrice, assumedRent: property.assumedRent || '', 
+                        loanAmount: property.loan.amount, loanRate: property.loan.rate, loanMonthly: property.loan.monthly, loanStartDate: property.loan.startDate || '' 
+                    });
                 } else {
                     setSelectedPropertyId(null);
-                    setFormData({ name: '', status: 'occupied', acquisitionPrice: '', assumedRent: '', loanAmount: '', loanRate: '', loanMonthly: '' });
+                    setFormData({ name: '', status: 'occupied', acquisitionPrice: '', assumedRent: '', loanAmount: '', loanRate: '', loanMonthly: '', loanStartDate: '' });
                 }
                 setCurrentView('form');
             };
@@ -957,8 +975,12 @@
                     <input required type="number" min="0" value={formData.assumedRent} onChange={e => setFormData({...formData, assumedRent: e.target.value})} className="w-full sm:w-1/2 border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 outline-none font-bold text-blue-700" placeholder="120000" />
                     </div>
 
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-4 border-t border-gray-100">
-                    <div className="sm:col-span-3"><label className="block text-sm font-bold text-gray-700">{t('loanInfo')}</label></div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 pt-4 border-t border-gray-100">
+                    <div className="sm:col-span-2 lg:col-span-4"><label className="block text-sm font-bold text-gray-700">{t('loanInfo')}</label></div>
+                    <div>
+                        <label className="block text-xs text-gray-500 mb-1">{t('loanStartDate')}</label>
+                        <input type="date" value={formData.loanStartDate} onChange={e => setFormData({...formData, loanStartDate: e.target.value})} className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-indigo-500 outline-none" />
+                    </div>
                     <div>
                         <label className="block text-xs text-gray-500 mb-1">{t('loanBalance')}</label>
                         <input required type="number" min="0" value={formData.loanAmount} onChange={e => setFormData({...formData, loanAmount: e.target.value})} className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-indigo-500 outline-none" />
