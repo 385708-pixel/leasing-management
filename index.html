@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
@@ -984,11 +984,11 @@
                             </button>
                         </div>
                     </div>
-                    <div style={{ height: '300px', width: '100%' }} className="mb-2">
+                    <div className="h-56 sm:h-[300px] w-full mb-2">
                         <ResponsiveContainer width="100%" height="100%">
                         <ComposedChart data={overallChartInfo.chartData} margin={{ top: 10, right: 0, left: 0, bottom: 0 }}>
                             <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                            <XAxis dataKey="label" axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#64748b' }} dy={10} />
+                            <XAxis dataKey="label" axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#64748b' }} dy={10} interval={0} />
                             <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#64748b' }} tickFormatter={(val) => val === 0 ? '0' : `${Math.abs(val) / 10000}万`} width={40} />
                             <Tooltip content={<CustomTooltip labelActual={t('actualDesc')} labelProjected={t('projectedDesc')} labelBalance={t('totalBalance')} properties={properties} hoveredBarId={hoveredBarId} />} cursor={{fill: '#f8fafc'}} />
                             <ReferenceLine y={0} stroke="#cbd5e1" strokeWidth={1} />
@@ -1365,12 +1365,12 @@
                             <div className="text-xl font-bold text-gray-600"><span className="text-sm mr-1">¥</span>{performanceData.expectedAnnualCashFlow.toLocaleString()}</div>
                             </div>
                         </div>
-                        <div style={{ height: '300px', width: '100%' }}>
+                        <div className="h-56 sm:h-[300px] w-full">
                             <ResponsiveContainer width="100%" height="100%">
                             <ComposedChart data={performanceData.chartData} margin={{ top: 20, right: 0, left: 0, bottom: 0 }}>
                                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                                <XAxis dataKey="label" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#64748b' }} dy={10} />
-                                <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#64748b' }} tickFormatter={(val) => val === 0 ? '0' : `${Math.abs(val) / 10000}万`} />
+                                <XAxis dataKey="label" axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#64748b' }} dy={10} interval={0} />
+                                <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#64748b' }} tickFormatter={(val) => val === 0 ? '0' : `${Math.abs(val) / 10000}万`} />
                                 <Tooltip content={<CustomTooltip labelActual={t('actualDesc')} labelProjected={t('projectedDesc')} labelBalance={t('totalBalance')} />} cursor={{fill: '#f8fafc'}} />
                                 <ReferenceLine y={0} stroke="#cbd5e1" strokeWidth={2} />
                                 
@@ -1590,4 +1590,5 @@
         root.render(<App />);
     </script>
 </body>
+</html>
 </html>
