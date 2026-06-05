@@ -476,15 +476,25 @@
 
                 setSyncMessage(t('sendingReport'));
 
-                // PDF生成時のレイアウト崩れ（ResponsiveContainerの幅計算エラー）を防ぐため、一時的に幅を固定値にする
-                const originalWidth = element.style.width;
-                element.style.width = `${element.offsetWidth}px`;
+                // PC版のきれいなレイアウトでPDF化するため、一時的に幅を固定値にする
+                const originalStyle = {
+                    width: element.style.width,
+                    maxWidth: element.style.maxWidth,
+                    overflow: element.style.overflow
+                };
+                
+                element.style.width = '1050px';
+                element.style.maxWidth = '1050px';
+                element.style.overflow = 'hidden';
+
+                // Recharts の ResponsiveContainer が新しい幅で再描画されるのを待つ
+                await new Promise(resolve => setTimeout(resolve, 500));
 
                 const opt = {
                     margin:       10, // mm単位での余白を設定
                     filename:     `${title}.pdf`,
                     image:        { type: 'jpeg', quality: 0.98 },
-                    html2canvas:  { scale: 2, useCORS: true, scrollY: 0, windowWidth: element.scrollWidth },
+                    html2canvas:  { scale: 2, useCORS: true, logging: false }, 
                     jsPDF:        { unit: 'mm', format: 'a4', orientation: 'landscape' }
                 };
 
@@ -492,9 +502,6 @@
                     // html2pdfで要素をPDF化し、base64データURLとして取得
                     const pdfBase64 = await window.html2pdf().set(opt).from(element).outputPdf('datauristring');
                     
-                    // 幅の固定を解除
-                    element.style.width = originalWidth;
-
                     const payload = {
                         action: 'sendEmail',
                         email: appSettings.reportEmail,
@@ -510,12 +517,14 @@
                     });
 
                     setSyncMessage(t('sendReportSuccess'));
-                    setTimeout(() => setSyncMessage(''), 3000);
                 } catch (error) {
-                    // 幅の固定を解除 (エラー時も)
-                    element.style.width = originalWidth;
                     console.error("PDF Send Error:", error);
                     setSyncMessage(t('sendReportError'));
+                } finally {
+                    // 幅の固定を解除
+                    element.style.width = originalStyle.width;
+                    element.style.maxWidth = originalStyle.maxWidth;
+                    element.style.overflow = originalStyle.overflow;
                     setTimeout(() => setSyncMessage(''), 3000);
                 }
             };
