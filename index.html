@@ -548,7 +548,7 @@
 
             // グラフ用のデータと年間総額・純額をまとめて計算
             const overallChartInfo = useMemo(() => {
-                if (properties.length === 0) return { chartData: [], annualTotalIncome: 0, annualNetIncome: 0 };
+                if (properties.length === 0) return { chartData: [], annualTotalIncome: 0, annualNetIncome: 0, actualMonthsCount: 0, expectedAnnualIncome: 0, expectedAnnualOperatingExpense: 0, expectedAnnualExpenseTotal: 0, expectedGrossYield: 0, expectedNetYield: 0, totalAcquisitionPrice: 0, actualIncome: 0, actualOperatingExpense: 0, actualExpenseTotal: 0 };
                 
                 const fiscalMonths = getFiscalMonths(currentHomeFiscalYear, appSettings.fiscalMonth);
                 const chartData = [];
@@ -557,12 +557,18 @@
                     if (year < currentActualYear || (year === currentActualYear && month <= currentActualMonth)) { lastActualIndex = index; }
                 });
 
-                let annualTotalIncome = 0;
-                let annualTotalExpense = 0;
+                let actualIncome = 0; let actualExpenseTotal = 0; let actualOperatingExpense = 0; let actualMonthsCount = 0;
+                let projectedIncome = 0; let projectedExpenseTotal = 0; let projectedOperatingExpense = 0;
+                let totalAcquisitionPrice = 0;
+
+                properties.forEach(p => {
+                    totalAcquisitionPrice += Number(p.acquisitionPrice) || 0;
+                });
 
                 fiscalMonths.forEach(({ year, month }, index) => {
-                    let totalIncome = 0; let totalExpense = 0;
-                    let projectedTotalIncome = 0; let projectedTotalExpense = 0;
+                    let totalIncomeMonth = 0; let totalExpenseMonth = 0; let operatingExpenseMonth = 0;
+                    let projectedTotalIncomeMonth = 0; let projectedTotalExpenseMonth = 0; let projectedOperatingExpenseMonth = 0;
+                    
                     const isPastOrCurrent = index <= lastActualIndex;
                     const isLastActual = index === lastActualIndex;
 
@@ -570,30 +576,44 @@
                         const yearStats = p.yearlyStats[year] || [];
                         const stat = yearStats.find(s => s.month === month) || createEmptyMonthStat(year, month);
                         
-                        const expense = Number(stat.managementFee) + Number(stat.repairFee) + Number(stat.taxPayment);
+                        const operatingExpense = Number(stat.managementFee) + Number(stat.repairFee) + Number(stat.taxPayment);
+                        const expense = operatingExpense;
                         let income = Number(stat.rentIncome);
                         if (!isPastOrCurrent && p.status === 'occupied' && income === 0) { income = p.assumedRent || 0; }
                         
-                        if (isPastOrCurrent) { totalIncome += income; totalExpense += expense; } 
-                        else { projectedTotalIncome += income; projectedTotalExpense += expense; }
+                        if (isPastOrCurrent) { 
+                            totalIncomeMonth += income; 
+                            totalExpenseMonth += expense; 
+                            operatingExpenseMonth += operatingExpense;
+                        } else { 
+                            projectedTotalIncomeMonth += income; 
+                            projectedTotalExpenseMonth += expense;
+                            projectedOperatingExpenseMonth += operatingExpense;
+                        }
                     });
 
-                    annualTotalIncome += totalIncome + projectedTotalIncome;
-                    annualTotalExpense += totalExpense + projectedTotalExpense;
-
-                    const total = (isPastOrCurrent ? totalIncome : projectedTotalIncome) - (isPastOrCurrent ? totalExpense : projectedTotalExpense);
+                    const total = (isPastOrCurrent ? totalIncomeMonth : projectedTotalIncomeMonth) - (isPastOrCurrent ? totalExpenseMonth : projectedTotalExpenseMonth);
 
                     if (isPastOrCurrent) {
-                        chartData.push({ label: `${month}${t('month')}`, actualIncome: totalIncome, actualExpense: -totalExpense, actualTotal: total, projectedTotal: isLastActual ? total : null });
+                        actualIncome += totalIncomeMonth; actualExpenseTotal += totalExpenseMonth; actualOperatingExpense += operatingExpenseMonth; actualMonthsCount++;
+                        chartData.push({ label: `${month}${t('month')}`, actualIncome: totalIncomeMonth, actualExpense: -totalExpenseMonth, actualTotal: total, projectedTotal: isLastActual ? total : null });
                     } else {
-                        chartData.push({ label: `${month}${t('month')}`, projectedIncome: projectedTotalIncome, projectedExpense: -projectedTotalExpense, actualTotal: null, projectedTotal: total });
+                        projectedIncome += projectedTotalIncomeMonth; projectedExpenseTotal += projectedTotalExpenseMonth; projectedOperatingExpense += projectedOperatingExpenseMonth;
+                        chartData.push({ label: `${month}${t('month')}`, projectedIncome: projectedTotalIncomeMonth, projectedExpense: -projectedTotalExpenseMonth, actualTotal: null, projectedTotal: total });
                     }
                 });
+
+                const expectedAnnualIncome = actualIncome + projectedIncome;
+                const expectedAnnualOperatingExpense = actualOperatingExpense + projectedOperatingExpense;
+                const expectedAnnualExpenseTotal = actualExpenseTotal + projectedExpenseTotal;
+                
+                const expectedGrossYield = totalAcquisitionPrice > 0 ? ((expectedAnnualIncome / totalAcquisitionPrice) * 100).toFixed(2) : 0;
+                const expectedNetYield = totalAcquisitionPrice > 0 ? (((expectedAnnualIncome - expectedAnnualOperatingExpense) / totalAcquisitionPrice) * 100).toFixed(2) : 0;
                 
                 return { 
-                    chartData, 
-                    annualTotalIncome, 
-                    annualNetIncome: annualTotalIncome - annualTotalExpense 
+                    chartData, actualMonthsCount, actualIncome, actualOperatingExpense, actualExpenseTotal,
+                    annualTotalIncome: expectedAnnualIncome, annualNetIncome: expectedAnnualIncome - expectedAnnualExpenseTotal,
+                    expectedAnnualIncome, expectedAnnualOperatingExpense, expectedAnnualExpenseTotal, expectedGrossYield, expectedNetYield, totalAcquisitionPrice
                 };
             }, [properties, currentHomeFiscalYear, appSettings.fiscalMonth, appSettings.language]);
 
@@ -868,7 +888,7 @@
                             </button>
                         </div>
                     </div>
-                    <div style={{ height: '200px', width: '100%' }}>
+                    <div style={{ height: '300px', width: '100%' }} className="mb-6">
                         <ResponsiveContainer width="100%" height="100%">
                         <ComposedChart data={overallChartInfo.chartData} margin={{ top: 10, right: 0, left: 0, bottom: 0 }}>
                             <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
@@ -876,14 +896,65 @@
                             <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#64748b' }} tickFormatter={(val) => val === 0 ? '0' : `${Math.abs(val) / 10000}万`} width={40} />
                             <Tooltip content={<CustomTooltip labelActual={t('actualDesc')} labelProjected={t('projectedDesc')} labelBalance={t('totalBalance')} />} cursor={{fill: '#f8fafc'}} />
                             <ReferenceLine y={0} stroke="#cbd5e1" strokeWidth={1} />
-                            <Bar dataKey="actualIncome" fill="#3b82f6" radius={[2, 2, 0, 0]} barSize={12} isAnimationActive={false} />
-                            <Bar dataKey="actualExpense" fill="#f87171" radius={[0, 0, 2, 2]} barSize={12} isAnimationActive={false} />
-                            <Bar dataKey="projectedIncome" fill="#bfdbfe" radius={[2, 2, 0, 0]} barSize={12} isAnimationActive={false} />
-                            <Bar dataKey="projectedExpense" fill="#fecaca" radius={[0, 0, 2, 2]} barSize={12} isAnimationActive={false} />
-                            <Line type="monotone" dataKey="actualTotal" stroke="#10b981" strokeWidth={2} dot={{ r: 3, fill: '#10b981', strokeWidth: 1, stroke: '#fff' }} connectNulls={false} isAnimationActive={false} />
-                            <Line type="monotone" dataKey="projectedTotal" stroke="#6ee7b7" strokeWidth={2} strokeDasharray="3 3" dot={{ r: 3, fill: '#6ee7b7', strokeWidth: 1, stroke: '#fff' }} connectNulls={false} isAnimationActive={false} />
+                            <Bar dataKey="actualIncome" fill="#3b82f6" radius={[4, 4, 0, 0]} barSize={20} isAnimationActive={false} />
+                            <Bar dataKey="actualExpense" fill="#f87171" radius={[0, 0, 4, 4]} barSize={20} isAnimationActive={false} />
+                            <Bar dataKey="projectedIncome" fill="#bfdbfe" radius={[4, 4, 0, 0]} barSize={20} isAnimationActive={false} />
+                            <Bar dataKey="projectedExpense" fill="#fecaca" radius={[0, 0, 4, 4]} barSize={20} isAnimationActive={false} />
+                            <Line type="monotone" dataKey="actualTotal" stroke="#10b981" strokeWidth={3} dot={{ r: 4, fill: '#10b981', strokeWidth: 2, stroke: '#fff' }} connectNulls={false} isAnimationActive={false} />
+                            <Line type="monotone" dataKey="projectedTotal" stroke="#6ee7b7" strokeWidth={3} strokeDasharray="5 5" dot={{ r: 4, fill: '#6ee7b7', strokeWidth: 2, stroke: '#fff' }} connectNulls={false} isAnimationActive={false} />
                         </ComposedChart>
                         </ResponsiveContainer>
+                    </div>
+                    <div className="flex justify-center gap-6 text-sm font-bold text-gray-500 mt-6 flex-wrap mb-8">
+                        <div className="flex items-center gap-1.5">
+                            <div className="flex"><div className="w-3 h-3 rounded-l-full bg-blue-500"></div><div className="w-3 h-3 rounded-r-full bg-blue-200"></div></div>
+                            {t('incomeActProj')}
+                        </div>
+                        <div className="flex items-center gap-1.5">
+                            <div className="flex"><div className="w-3 h-3 rounded-l-full bg-red-400"></div><div className="w-3 h-3 rounded-r-full bg-red-200"></div></div>
+                            {t('expenseActProj')}
+                        </div>
+                        <div className="flex items-center gap-1.5">
+                            <div className="flex"><div className="w-4 h-1 bg-green-500 mt-1"></div><div className="w-4 h-1 border-t-2 border-dashed border-green-300 mt-1 ml-0.5"></div></div>
+                            {t('totalActProj')}
+                        </div>
+                    </div>
+                    <div className="space-y-6">
+                        <div className="grid grid-cols-2 gap-4">
+                            <div className="bg-gray-50 p-5 rounded-xl border border-gray-100">
+                                <div className="text-xs text-gray-500 font-bold mb-2">{t('grossYield')} <span className="text-[10px] font-normal text-gray-400">{t('expected')}</span></div>
+                                <div className="text-3xl font-black text-slate-800">{overallChartInfo.expectedGrossYield}<span className="text-lg text-gray-400 ml-1">%</span></div>
+                            </div>
+                            <div className="bg-gray-50 p-5 rounded-xl border border-gray-100 border-l-4 border-l-indigo-500">
+                                <div className="text-xs text-gray-500 font-bold mb-2">{t('netYield')} <span className="text-[10px] font-normal text-indigo-300">{t('expected')}</span></div>
+                                <div className="text-3xl font-black text-indigo-700">{overallChartInfo.expectedNetYield}<span className="text-lg text-indigo-300 ml-1">%</span></div>
+                            </div>
+                        </div>
+                        <div className="bg-gray-50 rounded-xl border border-gray-100 p-5">
+                            <h3 className="font-bold text-gray-800 mb-4 pb-2 border-b">
+                            {currentHomeFiscalYear}{t('fiscalYear')} 全体サマリー (年間着地見込み)
+                            </h3>
+                            <div className="space-y-4 text-sm">
+                            <div className="flex justify-between items-center">
+                                <span className="text-gray-500">総取得価格</span>
+                                <span className="font-bold">¥{overallChartInfo.totalAcquisitionPrice.toLocaleString()}</span>
+                            </div>
+                            <div className="flex justify-between items-center">
+                                <span className="text-gray-500 flex items-center gap-1"><ArrowUpRight size={14} className="text-blue-500"/>家賃収入合計</span>
+                                <div className="text-right">
+                                <div className="font-bold text-blue-600">¥{overallChartInfo.expectedAnnualIncome.toLocaleString()}</div>
+                                <div className="text-[10px] text-gray-400">うち実績: ¥{overallChartInfo.actualIncome.toLocaleString()}</div>
+                                </div>
+                            </div>
+                            <div className="flex justify-between items-center">
+                                <span className="text-gray-500 flex items-center gap-1"><ArrowDownRight size={14} className="text-red-400"/>運営経費合計</span>
+                                <div className="text-right">
+                                <div className="font-bold text-red-500">¥{overallChartInfo.expectedAnnualOperatingExpense.toLocaleString()}</div>
+                                <div className="text-[10px] text-gray-400">うち実績: ¥{overallChartInfo.actualOperatingExpense.toLocaleString()}</div>
+                                </div>
+                            </div>
+                            </div>
+                        </div>
                     </div>
                     </div>
                 )}
@@ -1154,8 +1225,12 @@
                         </div>
 
                         <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
-                            <div className="xl:col-span-2 bg-white p-6 rounded-2xl shadow-sm border border-gray-200">
-                            <div className="flex justify-between items-end mb-6">
+                            <div className="xl:col-span-2 bg-white p-6 rounded-2xl shadow-sm border border-gray-200 relative">
+                            {/* PDF出力用の隠しタイトル（画面上はabsoluteで上部に配置、通常時は非表示にせず自然になじませる） */}
+                            <div className="absolute top-4 left-6 text-xs font-black text-indigo-800 bg-indigo-50 px-2 py-1 rounded">
+                                {selectedProperty.name}
+                            </div>
+                            <div className="flex justify-between items-end mb-6 mt-6">
                                 <div>
                                 <div className="text-sm text-gray-500 font-bold mb-1">{selectedYear}{t('fiscalYear')} {t('cumulativeCashFlow')}</div>
                                 <div className="text-4xl font-black text-slate-800"><span className="text-2xl mr-1">¥</span>{performanceData.actualCashFlow.toLocaleString()}</div>
