@@ -335,10 +335,10 @@
                     <p className="text-slate-500 font-bold text-xs mb-1">{data.label} {isProjected ? labelProjected : labelActual}</p>
                     
                     {/* 物件ごとの内訳を表示 (propertiesが渡された場合のみ) */}
-                    {properties && properties.length > 0 && (
+                    {properties && properties.length > 0 && hoveredBarId && (
                         <div className="mt-2 mb-2 border-t border-gray-100 pt-2 space-y-1.5">
-                            <p className="text-[10px] text-gray-400 font-bold">{hoveredBarId ? "物件の内訳" : "物件ごとの内訳"}</p>
-                            {properties.filter(p => hoveredBarId ? p.id === hoveredBarId : true).map((p) => {
+                            <p className="text-[10px] text-gray-400 font-bold">物件の内訳</p>
+                            {properties.filter(p => p.id === hoveredBarId).map((p) => {
                                 const originalIdx = properties.findIndex(prop => prop.id === p.id);
                                 const inc = data[`${p.id}_income`] || 0;
                                 const exp = Math.abs(data[`${p.id}_expense`] || 0);
