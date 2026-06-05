@@ -322,7 +322,7 @@
             return months;
         };
 
-        const CustomTooltip = ({ active, payload, labelActual, labelProjected, labelBalance }) => {
+        const CustomTooltip = ({ active, payload, labelActual, labelProjected, labelBalance, properties }) => {
             if (active && payload && payload.length) {
                 const data = payload[0].payload;
                 const isProjected = !data.isPastOrCurrent;
@@ -331,14 +331,42 @@
                 const total = data.actualTotal !== null ? data.actualTotal : data.projectedTotal;
 
                 return (
-                <div className="bg-white border border-gray-200 rounded-lg px-3 py-2 shadow-lg z-50">
+                <div className="bg-white border border-gray-200 rounded-lg px-3 py-2 shadow-lg z-50 min-w-[200px]">
                     <p className="text-slate-500 font-bold text-xs mb-1">{data.label} {isProjected ? labelProjected : labelActual}</p>
-                    <div className="flex justify-between items-center gap-4 text-xs mt-1">
-                        <span className="text-gray-500">収入:</span>
+                    
+                    {/* 物件ごとの内訳を表示 (propertiesが渡された場合のみ) */}
+                    {properties && properties.length > 0 && (
+                        <div className="mt-2 mb-2 border-t border-gray-100 pt-2 space-y-1.5">
+                            <p className="text-[10px] text-gray-400 font-bold">物件ごとの内訳</p>
+                            {properties.map((p, idx) => {
+                                const inc = data[`${p.id}_income`] || 0;
+                                const exp = Math.abs(data[`${p.id}_expense`] || 0);
+                                if (inc === 0 && exp === 0) return null;
+                                
+                                const color = PROPERTY_COLORS[idx % PROPERTY_COLORS.length];
+                                
+                                return (
+                                    <div key={p.id} className="text-[10px] bg-slate-50 p-1.5 rounded border border-slate-100">
+                                        <div className="text-gray-700 font-bold truncate max-w-[200px] mb-0.5 flex items-center gap-1">
+                                            <div className="w-2 h-2 rounded-sm" style={{ backgroundColor: color.incomeDark }}></div>
+                                            {p.name}
+                                        </div>
+                                        <div className="flex justify-between gap-4 pl-3">
+                                            <span className="text-blue-500 font-medium">収: ¥{inc.toLocaleString()}</span>
+                                            <span className="text-red-400 font-medium">支: ¥{exp.toLocaleString()}</span>
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    )}
+
+                    <div className="flex justify-between items-center gap-4 text-xs mt-1 border-t border-gray-100 pt-2">
+                        <span className="text-gray-500">合計収入:</span>
                         <span className="font-bold text-blue-600">¥{totalIncome.toLocaleString()}</span>
                     </div>
                     <div className="flex justify-between items-center gap-4 text-xs mt-0.5">
-                        <span className="text-gray-500">支出:</span>
+                        <span className="text-gray-500">合計支出:</span>
                         <span className="font-bold text-red-500">¥{Math.abs(totalExpense).toLocaleString()}</span>
                     </div>
                     <div className="flex justify-between items-center gap-4 text-sm mt-1 border-t border-gray-100 pt-1">
@@ -960,7 +988,7 @@
                             <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
                             <XAxis dataKey="label" axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#64748b' }} dy={10} />
                             <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#64748b' }} tickFormatter={(val) => val === 0 ? '0' : `${Math.abs(val) / 10000}万`} width={40} />
-                            <Tooltip content={<CustomTooltip labelActual={t('actualDesc')} labelProjected={t('projectedDesc')} labelBalance={t('totalBalance')} />} cursor={{fill: '#f8fafc'}} />
+                            <Tooltip content={<CustomTooltip labelActual={t('actualDesc')} labelProjected={t('projectedDesc')} labelBalance={t('totalBalance')} properties={properties} />} cursor={{fill: '#f8fafc'}} />
                             <ReferenceLine y={0} stroke="#cbd5e1" strokeWidth={1} />
                             
                             {/* 物件ごとの積み上げ棒グラフの生成 */}
@@ -1556,5 +1584,4 @@
         root.render(<App />);
     </script>
 </body>
-</html>
 </html>
