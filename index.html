@@ -322,7 +322,7 @@
             return months;
         };
 
-        const CustomTooltip = ({ active, payload, labelActual, labelProjected, labelBalance, properties }) => {
+        const CustomTooltip = ({ active, payload, labelActual, labelProjected, labelBalance, properties, hoveredBarId }) => {
             if (active && payload && payload.length) {
                 const data = payload[0].payload;
                 const isProjected = !data.isPastOrCurrent;
@@ -337,13 +337,14 @@
                     {/* 物件ごとの内訳を表示 (propertiesが渡された場合のみ) */}
                     {properties && properties.length > 0 && (
                         <div className="mt-2 mb-2 border-t border-gray-100 pt-2 space-y-1.5">
-                            <p className="text-[10px] text-gray-400 font-bold">物件ごとの内訳</p>
-                            {properties.map((p, idx) => {
+                            <p className="text-[10px] text-gray-400 font-bold">{hoveredBarId ? "物件の内訳" : "物件ごとの内訳"}</p>
+                            {properties.filter(p => hoveredBarId ? p.id === hoveredBarId : true).map((p) => {
+                                const originalIdx = properties.findIndex(prop => prop.id === p.id);
                                 const inc = data[`${p.id}_income`] || 0;
                                 const exp = Math.abs(data[`${p.id}_expense`] || 0);
                                 if (inc === 0 && exp === 0) return null;
                                 
-                                const color = PROPERTY_COLORS[idx % PROPERTY_COLORS.length];
+                                const color = PROPERTY_COLORS[originalIdx % PROPERTY_COLORS.length];
                                 
                                 return (
                                     <div key={p.id} className="text-[10px] bg-slate-50 p-1.5 rounded border border-slate-100">
@@ -450,6 +451,7 @@
             
             // クラウド同期・PDF送信用のステート
             const [syncMessage, setSyncMessage] = useState('');
+            const [hoveredBarId, setHoveredBarId] = useState(null);
 
             const [homeTargetYear, setHomeTargetYear] = useState(currentActualYear);
             const [homeTargetMonth, setHomeTargetMonth] = useState(currentActualMonth);
@@ -988,19 +990,23 @@
                             <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
                             <XAxis dataKey="label" axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#64748b' }} dy={10} />
                             <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#64748b' }} tickFormatter={(val) => val === 0 ? '0' : `${Math.abs(val) / 10000}万`} width={40} />
-                            <Tooltip content={<CustomTooltip labelActual={t('actualDesc')} labelProjected={t('projectedDesc')} labelBalance={t('totalBalance')} properties={properties} />} cursor={{fill: '#f8fafc'}} />
+                            <Tooltip content={<CustomTooltip labelActual={t('actualDesc')} labelProjected={t('projectedDesc')} labelBalance={t('totalBalance')} properties={properties} hoveredBarId={hoveredBarId} />} cursor={{fill: '#f8fafc'}} />
                             <ReferenceLine y={0} stroke="#cbd5e1" strokeWidth={1} />
                             
                             {/* 物件ごとの積み上げ棒グラフの生成 */}
                             {properties.map((p, idx) => {
                                 const color = PROPERTY_COLORS[idx % PROPERTY_COLORS.length];
                                 return [
-                                    <Bar key={`inc-${p.id}`} dataKey={`${p.id}_income`} stackId="income" barSize={16} isAnimationActive={false}>
+                                    <Bar key={`inc-${p.id}`} dataKey={`${p.id}_income`} stackId="income" barSize={16} isAnimationActive={false}
+                                         onMouseEnter={() => setHoveredBarId(p.id)}
+                                         onMouseLeave={() => setHoveredBarId(null)}>
                                         {overallChartInfo.chartData.map((entry, i) => (
                                             <Cell key={`cell-inc-${p.id}-${i}`} fill={entry.isPastOrCurrent ? color.incomeDark : color.incomeLight} />
                                         ))}
                                     </Bar>,
-                                    <Bar key={`exp-${p.id}`} dataKey={`${p.id}_expense`} stackId="expense" barSize={16} isAnimationActive={false}>
+                                    <Bar key={`exp-${p.id}`} dataKey={`${p.id}_expense`} stackId="expense" barSize={16} isAnimationActive={false}
+                                         onMouseEnter={() => setHoveredBarId(p.id)}
+                                         onMouseLeave={() => setHoveredBarId(null)}>
                                         {overallChartInfo.chartData.map((entry, i) => (
                                             <Cell key={`cell-exp-${p.id}-${i}`} fill={entry.isPastOrCurrent ? color.expenseDark : color.expenseLight} />
                                         ))}
