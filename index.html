@@ -24,8 +24,9 @@
     <script src="https://unpkg.com/react-is/umd/react-is.production.min.js"></script>
     <script src="https://unpkg.com/recharts@2.12.0/umd/Recharts.js"></script>
     
-    <!-- html2pdf.js (PDF化ライブラリ) -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <!-- html2canvas & jsPDF (ページ分割を防ぎ1ページに収めるためのライブラリ) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 
     <!-- Babel for in-browser JSX compilation -->
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
@@ -480,27 +481,49 @@
                 const originalStyle = {
                     width: element.style.width,
                     maxWidth: element.style.maxWidth,
-                    overflow: element.style.overflow
                 };
                 
                 element.style.width = '1050px';
                 element.style.maxWidth = '1050px';
-                element.style.overflow = 'hidden';
 
                 // Recharts の ResponsiveContainer が新しい幅で再描画されるのを待つ
                 await new Promise(resolve => setTimeout(resolve, 500));
 
-                const opt = {
-                    margin:       10, // mm単位での余白を設定
-                    filename:     `${title}.pdf`,
-                    image:        { type: 'jpeg', quality: 0.98 },
-                    html2canvas:  { scale: 2, useCORS: true, logging: false }, 
-                    jsPDF:        { unit: 'mm', format: 'a4', orientation: 'landscape' }
-                };
-
                 try {
-                    // html2pdfで要素をPDF化し、base64データURLとして取得
-                    const pdfBase64 = await window.html2pdf().set(opt).from(element).outputPdf('datauristring');
+                    // html2canvasで要素を画像化 (背景色を明示的に指定して透過・黒塗りを防止)
+                    const canvas = await window.html2canvas(element, { 
+                        scale: 2, 
+                        useCORS: true, 
+                        logging: false,
+                        backgroundColor: '#ffffff'
+                    });
+                    const imgData = canvas.toDataURL('image/jpeg', 0.98);
+                    
+                    // jsPDFを使って1枚のA4横サイズに画像を綺麗に収める（ページ分割を回避）
+                    const { jsPDF } = window.jspdf;
+                    const pdf = new jsPDF('l', 'mm', 'a4'); // 横向き A4
+                    const pdfWidth = pdf.internal.pageSize.getWidth();
+                    const pdfHeight = pdf.internal.pageSize.getHeight();
+                    
+                    const margin = 10;
+                    const maxW = pdfWidth - margin * 2;
+                    const maxH = pdfHeight - margin * 2;
+                    
+                    let imgW = maxW;
+                    let imgH = (canvas.height * imgW) / canvas.width;
+                    
+                    // 高さがA4用紙1枚分に収まらない場合は、高さに合わせて全体をさらに縮小する
+                    if (imgH > maxH) {
+                        imgH = maxH;
+                        imgW = (canvas.width * imgH) / canvas.height;
+                    }
+                    
+                    // 中央に配置するためのオフセット計算
+                    const x = margin + (maxW - imgW) / 2;
+                    const y = margin; // 上寄せ
+                    
+                    pdf.addImage(imgData, 'JPEG', x, y, imgW, imgH);
+                    const pdfBase64 = pdf.output('datauristring');
                     
                     const payload = {
                         action: 'sendEmail',
@@ -524,7 +547,6 @@
                     // 幅の固定を解除
                     element.style.width = originalStyle.width;
                     element.style.maxWidth = originalStyle.maxWidth;
-                    element.style.overflow = originalStyle.overflow;
                     setTimeout(() => setSyncMessage(''), 3000);
                 }
             };
@@ -862,8 +884,11 @@
                 </div>
 
                 {properties.length > 0 && (
-                    <div id="home-report" className="bg-white rounded-2xl shadow-sm border border-gray-200 p-5 mb-8">
-                    <div className="flex flex-col xl:flex-row justify-between items-start xl:items-center mb-6 gap-4">
+                    <div id="home-report" className="bg-white rounded-2xl shadow-sm border border-gray-200 p-5 mb-8 relative">
+                    <div className="absolute top-4 left-6 text-xs font-black text-indigo-800 bg-indigo-50 px-2 py-1 rounded">
+                        全体収支レポート
+                    </div>
+                    <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center mb-6 gap-4 mt-8">
                         <h2 className="text-sm font-bold text-gray-700 flex items-center whitespace-nowrap">
                             {currentHomeFiscalYear}{t('fiscalYear')} {t('overallTrend')}
                             <span className="text-[10px] font-normal text-gray-400 ml-2">{t('actualAndProjected')}</span>
@@ -919,8 +944,8 @@
                             {t('totalActProj')}
                         </div>
                     </div>
-                    <div className="space-y-6">
-                        <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                        <div className="lg:col-span-2 grid grid-cols-2 gap-4">
                             <div className="bg-gray-50 p-5 rounded-xl border border-gray-100">
                                 <div className="text-xs text-gray-500 font-bold mb-2">{t('grossYield')} <span className="text-[10px] font-normal text-gray-400">{t('expected')}</span></div>
                                 <div className="text-3xl font-black text-slate-800">{overallChartInfo.expectedGrossYield}<span className="text-lg text-gray-400 ml-1">%</span></div>
@@ -932,7 +957,7 @@
                         </div>
                         <div className="bg-gray-50 rounded-xl border border-gray-100 p-5">
                             <h3 className="font-bold text-gray-800 mb-4 pb-2 border-b">
-                            {currentHomeFiscalYear}{t('fiscalYear')} 全体サマリー (年間着地見込み)
+                            {currentHomeFiscalYear}{t('fiscalYear')} 全体サマリー <br/><span className="text-xs font-normal text-gray-500">(年間着地見込み)</span>
                             </h3>
                             <div className="space-y-4 text-sm">
                             <div className="flex justify-between items-center">
@@ -1224,8 +1249,8 @@
                             </button>
                         </div>
 
-                        <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
-                            <div className="xl:col-span-2 bg-white p-6 rounded-2xl shadow-sm border border-gray-200 relative">
+                        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                            <div className="lg:col-span-2 bg-white p-6 rounded-2xl shadow-sm border border-gray-200 relative">
                             {/* PDF出力用の隠しタイトル（画面上はabsoluteで上部に配置、通常時は非表示にせず自然になじませる） */}
                             <div className="absolute top-4 left-6 text-xs font-black text-indigo-800 bg-indigo-50 px-2 py-1 rounded">
                                 {selectedProperty.name}
