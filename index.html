@@ -8,7 +8,7 @@
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
 
-    <link rel="icon" type="images/png" href="icon.png">
+    <link rel="icon" type="image/png" href="icon.png">
     <link rel="apple-touch-icon" href="icon.png">
 
     <meta name="apple-mobile-web-app-capable" content="yes">
@@ -476,18 +476,25 @@
 
                 setSyncMessage(t('sendingReport'));
 
+                // PDF生成時のレイアウト崩れ（ResponsiveContainerの幅計算エラー）を防ぐため、一時的に幅を固定値にする
+                const originalWidth = element.style.width;
+                element.style.width = `${element.offsetWidth}px`;
+
                 const opt = {
-                    margin: 0.3,
-                    filename: `${title}.pdf`,
-                    image: { type: 'jpeg', quality: 0.98 },
-                    html2canvas: { scale: 2, useCORS: true },
-                    jsPDF: { unit: 'in', format: 'a4', orientation: 'landscape' }
+                    margin:       10, // mm単位での余白を設定
+                    filename:     `${title}.pdf`,
+                    image:        { type: 'jpeg', quality: 0.98 },
+                    html2canvas:  { scale: 2, useCORS: true, scrollY: 0, windowWidth: element.scrollWidth },
+                    jsPDF:        { unit: 'mm', format: 'a4', orientation: 'landscape' }
                 };
 
                 try {
                     // html2pdfで要素をPDF化し、base64データURLとして取得
                     const pdfBase64 = await window.html2pdf().set(opt).from(element).outputPdf('datauristring');
                     
+                    // 幅の固定を解除
+                    element.style.width = originalWidth;
+
                     const payload = {
                         action: 'sendEmail',
                         email: appSettings.reportEmail,
@@ -505,6 +512,8 @@
                     setSyncMessage(t('sendReportSuccess'));
                     setTimeout(() => setSyncMessage(''), 3000);
                 } catch (error) {
+                    // 幅の固定を解除 (エラー時も)
+                    element.style.width = originalWidth;
                     console.error("PDF Send Error:", error);
                     setSyncMessage(t('sendReportError'));
                     setTimeout(() => setSyncMessage(''), 3000);
@@ -850,7 +859,7 @@
                             </button>
                         </div>
                     </div>
-                    <div className="h-[200px] w-full">
+                    <div style={{ height: '200px', width: '100%' }}>
                         <ResponsiveContainer width="100%" height="100%">
                         <ComposedChart data={overallChartInfo.chartData} margin={{ top: 10, right: 0, left: 0, bottom: 0 }}>
                             <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
@@ -858,12 +867,12 @@
                             <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#64748b' }} tickFormatter={(val) => val === 0 ? '0' : `${Math.abs(val) / 10000}万`} width={40} />
                             <Tooltip content={<CustomTooltip labelActual={t('actualDesc')} labelProjected={t('projectedDesc')} labelBalance={t('totalBalance')} />} cursor={{fill: '#f8fafc'}} />
                             <ReferenceLine y={0} stroke="#cbd5e1" strokeWidth={1} />
-                            <Bar dataKey="actualIncome" fill="#3b82f6" radius={[2, 2, 0, 0]} barSize={12} />
-                            <Bar dataKey="actualExpense" fill="#f87171" radius={[0, 0, 2, 2]} barSize={12} />
-                            <Bar dataKey="projectedIncome" fill="#bfdbfe" radius={[2, 2, 0, 0]} barSize={12} />
-                            <Bar dataKey="projectedExpense" fill="#fecaca" radius={[0, 0, 2, 2]} barSize={12} />
-                            <Line type="monotone" dataKey="actualTotal" stroke="#10b981" strokeWidth={2} dot={{ r: 3, fill: '#10b981', strokeWidth: 1, stroke: '#fff' }} connectNulls={false} />
-                            <Line type="monotone" dataKey="projectedTotal" stroke="#6ee7b7" strokeWidth={2} strokeDasharray="3 3" dot={{ r: 3, fill: '#6ee7b7', strokeWidth: 1, stroke: '#fff' }} connectNulls={false} />
+                            <Bar dataKey="actualIncome" fill="#3b82f6" radius={[2, 2, 0, 0]} barSize={12} isAnimationActive={false} />
+                            <Bar dataKey="actualExpense" fill="#f87171" radius={[0, 0, 2, 2]} barSize={12} isAnimationActive={false} />
+                            <Bar dataKey="projectedIncome" fill="#bfdbfe" radius={[2, 2, 0, 0]} barSize={12} isAnimationActive={false} />
+                            <Bar dataKey="projectedExpense" fill="#fecaca" radius={[0, 0, 2, 2]} barSize={12} isAnimationActive={false} />
+                            <Line type="monotone" dataKey="actualTotal" stroke="#10b981" strokeWidth={2} dot={{ r: 3, fill: '#10b981', strokeWidth: 1, stroke: '#fff' }} connectNulls={false} isAnimationActive={false} />
+                            <Line type="monotone" dataKey="projectedTotal" stroke="#6ee7b7" strokeWidth={2} strokeDasharray="3 3" dot={{ r: 3, fill: '#6ee7b7', strokeWidth: 1, stroke: '#fff' }} connectNulls={false} isAnimationActive={false} />
                         </ComposedChart>
                         </ResponsiveContainer>
                     </div>
@@ -1143,28 +1152,28 @@
                                 <div className="text-4xl font-black text-slate-800"><span className="text-2xl mr-1">¥</span>{performanceData.actualCashFlow.toLocaleString()}</div>
                                 </div>
                                 <div className="text-right">
-                                <div className="text-xs text-gray-400 font-bold mb-1">{t('annualLanding')}</div>
-                                <div className="text-xl font-bold text-gray-600"><span className="text-sm mr-1">¥</span>{performanceData.expectedAnnualCashFlow.toLocaleString()}</div>
-                                </div>
+                            <div className="text-xs text-gray-400 font-bold mb-1">{t('annualLanding')}</div>
+                            <div className="text-xl font-bold text-gray-600"><span className="text-sm mr-1">¥</span>{performanceData.expectedAnnualCashFlow.toLocaleString()}</div>
                             </div>
-                            <div className="h-[300px] w-full">
-                                <ResponsiveContainer width="100%" height="100%">
-                                <ComposedChart data={performanceData.chartData} margin={{ top: 20, right: 0, left: 0, bottom: 0 }}>
-                                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                                    <XAxis dataKey="label" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#64748b' }} dy={10} />
-                                    <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#64748b' }} tickFormatter={(val) => val === 0 ? '0' : `${Math.abs(val) / 10000}万`} />
-                                    <Tooltip content={<CustomTooltip labelActual={t('actualDesc')} labelProjected={t('projectedDesc')} labelBalance={t('totalBalance')} />} cursor={{fill: '#f8fafc'}} />
-                                    <ReferenceLine y={0} stroke="#cbd5e1" strokeWidth={2} />
-                                    <Bar dataKey="actualIncome" fill="#3b82f6" radius={[4, 4, 0, 0]} barSize={20} />
-                                    <Bar dataKey="actualExpense" fill="#f87171" radius={[0, 0, 4, 4]} barSize={20} />
-                                    <Bar dataKey="projectedIncome" fill="#bfdbfe" radius={[4, 4, 0, 0]} barSize={20} />
-                                    <Bar dataKey="projectedExpense" fill="#fecaca" radius={[0, 0, 4, 4]} barSize={20} />
-                                    <Line type="monotone" dataKey="actualTotal" stroke="#10b981" strokeWidth={3} dot={{ r: 4, fill: '#10b981', strokeWidth: 2, stroke: '#fff' }} connectNulls={false} />
-                                    <Line type="monotone" dataKey="projectedTotal" stroke="#6ee7b7" strokeWidth={3} strokeDasharray="5 5" dot={{ r: 4, fill: '#6ee7b7', strokeWidth: 2, stroke: '#fff' }} connectNulls={false} />
-                                </ComposedChart>
-                                </ResponsiveContainer>
-                            </div>
-                            <div className="flex justify-center gap-6 text-sm font-bold text-gray-500 mt-6 flex-wrap">
+                        </div>
+                        <div style={{ height: '300px', width: '100%' }}>
+                            <ResponsiveContainer width="100%" height="100%">
+                            <ComposedChart data={performanceData.chartData} margin={{ top: 20, right: 0, left: 0, bottom: 0 }}>
+                                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                                <XAxis dataKey="label" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#64748b' }} dy={10} />
+                                <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#64748b' }} tickFormatter={(val) => val === 0 ? '0' : `${Math.abs(val) / 10000}万`} />
+                                <Tooltip content={<CustomTooltip labelActual={t('actualDesc')} labelProjected={t('projectedDesc')} labelBalance={t('totalBalance')} />} cursor={{fill: '#f8fafc'}} />
+                                <ReferenceLine y={0} stroke="#cbd5e1" strokeWidth={2} />
+                                <Bar dataKey="actualIncome" fill="#3b82f6" radius={[4, 4, 0, 0]} barSize={20} isAnimationActive={false} />
+                                <Bar dataKey="actualExpense" fill="#f87171" radius={[0, 0, 4, 4]} barSize={20} isAnimationActive={false} />
+                                <Bar dataKey="projectedIncome" fill="#bfdbfe" radius={[4, 4, 0, 0]} barSize={20} isAnimationActive={false} />
+                                <Bar dataKey="projectedExpense" fill="#fecaca" radius={[0, 0, 4, 4]} barSize={20} isAnimationActive={false} />
+                                <Line type="monotone" dataKey="actualTotal" stroke="#10b981" strokeWidth={3} dot={{ r: 4, fill: '#10b981', strokeWidth: 2, stroke: '#fff' }} connectNulls={false} isAnimationActive={false} />
+                                <Line type="monotone" dataKey="projectedTotal" stroke="#6ee7b7" strokeWidth={3} strokeDasharray="5 5" dot={{ r: 4, fill: '#6ee7b7', strokeWidth: 2, stroke: '#fff' }} connectNulls={false} isAnimationActive={false} />
+                            </ComposedChart>
+                            </ResponsiveContainer>
+                        </div>
+                        <div className="flex justify-center gap-6 text-sm font-bold text-gray-500 mt-6 flex-wrap">
                                 <div className="flex items-center gap-1.5">
                                     <div className="flex"><div className="w-3 h-3 rounded-l-full bg-blue-500"></div><div className="w-3 h-3 rounded-r-full bg-blue-200"></div></div>
                                     {t('incomeActProj')}
