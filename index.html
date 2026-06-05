@@ -42,12 +42,21 @@
 
     <script type="text/babel">
         const { useState, useMemo, useEffect } = React;
-        const { ComposedChart, Bar, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine } = window.Recharts;
+        const { ComposedChart, Bar, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine, Cell } = window.Recharts;
 
         // 指定されたGoogle Apps ScriptのWebアプリURL
         const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbxzKZC2EQUIyfhB3WwCURpwAB-dLvm0k0jFrltZeX0KVfBvhYTRlop9cg21uEcGnntw/exec";
         const STORAGE_KEY_PROPERTIES = "dx_realestate_properties";
         const STORAGE_KEY_SETTINGS = "dx_realestate_settings";
+
+        // 物件ごとの積み上げ棒グラフ用カラーパレット (収入:濃淡 / 支出:濃淡)
+        const PROPERTY_COLORS = [
+            { incomeDark: '#3b82f6', incomeLight: '#bfdbfe', expenseDark: '#ef4444', expenseLight: '#fecaca' }, // Blue / Red
+            { incomeDark: '#10b981', incomeLight: '#a7f3d0', expenseDark: '#f97316', expenseLight: '#fed7aa' }, // Emerald / Orange
+            { incomeDark: '#8b5cf6', incomeLight: '#ddd6fe', expenseDark: '#ec4899', expenseLight: '#fbcfe8' }, // Violet / Pink
+            { incomeDark: '#f59e0b', incomeLight: '#fde68a', expenseDark: '#84cc16', expenseLight: '#d9f99d' }, // Amber / Lime
+            { incomeDark: '#06b6d4', incomeLight: '#cffafe', expenseDark: '#f43f5e', expenseLight: '#fecdd3' }, // Cyan / Rose
+        ];
 
         // --- アイコンコンポーネント (Lucide互換) ---
         const IconBase = ({ size = 24, className = "", children }) => (
@@ -315,17 +324,27 @@
 
         const CustomTooltip = ({ active, payload, labelActual, labelProjected, labelBalance }) => {
             if (active && payload && payload.length) {
-                const actTotal = payload.find(p => p.dataKey === 'actualTotal')?.value;
-                const projTotal = payload.find(p => p.dataKey === 'projectedTotal')?.value;
-                const total = actTotal !== undefined && actTotal !== null ? actTotal : projTotal;
-                const isProjected = (actTotal === undefined || actTotal === null) && projTotal !== undefined;
+                const data = payload[0].payload;
+                const isProjected = !data.isPastOrCurrent;
+                const totalIncome = data.totalIncome || 0;
+                const totalExpense = data.totalExpense || 0;
+                const total = data.actualTotal !== null ? data.actualTotal : data.projectedTotal;
 
                 return (
-                <div className="bg-white border border-gray-200 rounded-lg px-3 py-2 shadow-lg">
-                    <p className="text-slate-500 font-bold text-xs mb-1">{payload[0].payload.label} {isProjected ? labelProjected : labelActual}</p>
-                    <p className={`font-black text-sm ${isProjected ? 'text-green-400' : 'text-green-600'}`}>
-                    {labelBalance}: ¥{(total || 0).toLocaleString()}
-                    </p>
+                <div className="bg-white border border-gray-200 rounded-lg px-3 py-2 shadow-lg z-50">
+                    <p className="text-slate-500 font-bold text-xs mb-1">{data.label} {isProjected ? labelProjected : labelActual}</p>
+                    <div className="flex justify-between items-center gap-4 text-xs mt-1">
+                        <span className="text-gray-500">収入:</span>
+                        <span className="font-bold text-blue-600">¥{totalIncome.toLocaleString()}</span>
+                    </div>
+                    <div className="flex justify-between items-center gap-4 text-xs mt-0.5">
+                        <span className="text-gray-500">支出:</span>
+                        <span className="font-bold text-red-500">¥{Math.abs(totalExpense).toLocaleString()}</span>
+                    </div>
+                    <div className="flex justify-between items-center gap-4 text-sm mt-1 border-t border-gray-100 pt-1">
+                        <span className="text-gray-600 font-bold">{labelBalance}:</span>
+                        <span className={`font-black ${isProjected ? 'text-green-400' : 'text-green-600'}`}>¥{(total || 0).toLocaleString()}</span>
+                    </div>
                 </div>
                 );
             }
@@ -594,6 +613,13 @@
                     const isPastOrCurrent = index <= lastActualIndex;
                     const isLastActual = index === lastActualIndex;
 
+                    let entry = {
+                        label: `${month}${t('month')}`,
+                        isPastOrCurrent: isPastOrCurrent,
+                        actualTotal: null,
+                        projectedTotal: null,
+                    };
+
                     properties.forEach(p => {
                         const yearStats = p.yearlyStats[year] || [];
                         const stat = yearStats.find(s => s.month === month) || createEmptyMonthStat(year, month);
@@ -602,6 +628,9 @@
                         const expense = operatingExpense;
                         let income = Number(stat.rentIncome);
                         if (!isPastOrCurrent && p.status === 'occupied' && income === 0) { income = p.assumedRent || 0; }
+                        
+                        entry[`${p.id}_income`] = income;
+                        entry[`${p.id}_expense`] = -expense; // マイナスで積み上げる
                         
                         if (isPastOrCurrent) { 
                             totalIncomeMonth += income; 
@@ -615,14 +644,18 @@
                     });
 
                     const total = (isPastOrCurrent ? totalIncomeMonth : projectedTotalIncomeMonth) - (isPastOrCurrent ? totalExpenseMonth : projectedTotalExpenseMonth);
+                    entry.totalIncome = isPastOrCurrent ? totalIncomeMonth : projectedTotalIncomeMonth;
+                    entry.totalExpense = -(isPastOrCurrent ? totalExpenseMonth : projectedTotalExpenseMonth);
 
                     if (isPastOrCurrent) {
                         actualIncome += totalIncomeMonth; actualExpenseTotal += totalExpenseMonth; actualOperatingExpense += operatingExpenseMonth; actualMonthsCount++;
-                        chartData.push({ label: `${month}${t('month')}`, actualIncome: totalIncomeMonth, actualExpense: -totalExpenseMonth, actualTotal: total, projectedTotal: isLastActual ? total : null });
+                        entry.actualTotal = total;
+                        if (isLastActual) entry.projectedTotal = total; // 予定の線へ繋げるため
                     } else {
                         projectedIncome += projectedTotalIncomeMonth; projectedExpenseTotal += projectedTotalExpenseMonth; projectedOperatingExpense += projectedOperatingExpenseMonth;
-                        chartData.push({ label: `${month}${t('month')}`, projectedIncome: projectedTotalIncomeMonth, projectedExpense: -projectedTotalExpenseMonth, actualTotal: null, projectedTotal: total });
+                        entry.projectedTotal = total;
                     }
+                    chartData.push(entry);
                 });
 
                 const expectedAnnualIncome = actualIncome + projectedIncome;
@@ -669,10 +702,18 @@
 
                     if (isPastOrCurrent) {
                         actualIncome += income; actualOperatingExpense += operatingExpense; actualExpenseTotal += totalExpense; actualMonthsCount++;
-                        chartData.push({ label: `${month}${t('month')}`, actualIncome: income, actualExpense: -totalExpense, actualTotal: total, projectedTotal: isLastActual ? total : null });
+                        chartData.push({ 
+                            label: `${month}${t('month')}`, isPastOrCurrent: true,
+                            income: income, expense: -totalExpense, totalIncome: income, totalExpense: -totalExpense,
+                            actualTotal: total, projectedTotal: isLastActual ? total : null 
+                        });
                     } else {
                         projectedIncome += income; projectedOperatingExpense += operatingExpense; projectedExpenseTotal += totalExpense;
-                        chartData.push({ label: `${month}${t('month')}`, projectedIncome: income, projectedExpense: -totalExpense, actualTotal: null, projectedTotal: total });
+                        chartData.push({ 
+                            label: `${month}${t('month')}`, isPastOrCurrent: false,
+                            income: income, expense: -totalExpense, totalIncome: income, totalExpense: -totalExpense,
+                            actualTotal: null, projectedTotal: total 
+                        });
                     }
                     tableData.push({ actualYear: year, isPastOrCurrent, ...stat });
                 });
@@ -913,7 +954,7 @@
                             </button>
                         </div>
                     </div>
-                    <div style={{ height: '300px', width: '100%' }} className="mb-6">
+                    <div style={{ height: '300px', width: '100%' }} className="mb-2">
                         <ResponsiveContainer width="100%" height="100%">
                         <ComposedChart data={overallChartInfo.chartData} margin={{ top: 10, right: 0, left: 0, bottom: 0 }}>
                             <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
@@ -921,29 +962,54 @@
                             <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#64748b' }} tickFormatter={(val) => val === 0 ? '0' : `${Math.abs(val) / 10000}万`} width={40} />
                             <Tooltip content={<CustomTooltip labelActual={t('actualDesc')} labelProjected={t('projectedDesc')} labelBalance={t('totalBalance')} />} cursor={{fill: '#f8fafc'}} />
                             <ReferenceLine y={0} stroke="#cbd5e1" strokeWidth={1} />
-                            <Bar dataKey="actualIncome" fill="#3b82f6" radius={[4, 4, 0, 0]} barSize={20} isAnimationActive={false} />
-                            <Bar dataKey="actualExpense" fill="#f87171" radius={[0, 0, 4, 4]} barSize={20} isAnimationActive={false} />
-                            <Bar dataKey="projectedIncome" fill="#bfdbfe" radius={[4, 4, 0, 0]} barSize={20} isAnimationActive={false} />
-                            <Bar dataKey="projectedExpense" fill="#fecaca" radius={[0, 0, 4, 4]} barSize={20} isAnimationActive={false} />
-                            <Line type="monotone" dataKey="actualTotal" stroke="#10b981" strokeWidth={3} dot={{ r: 4, fill: '#10b981', strokeWidth: 2, stroke: '#fff' }} connectNulls={false} isAnimationActive={false} />
-                            <Line type="monotone" dataKey="projectedTotal" stroke="#6ee7b7" strokeWidth={3} strokeDasharray="5 5" dot={{ r: 4, fill: '#6ee7b7', strokeWidth: 2, stroke: '#fff' }} connectNulls={false} isAnimationActive={false} />
+                            
+                            {/* 物件ごとの積み上げ棒グラフの生成 */}
+                            {properties.map((p, idx) => {
+                                const color = PROPERTY_COLORS[idx % PROPERTY_COLORS.length];
+                                return [
+                                    <Bar key={`inc-${p.id}`} dataKey={`${p.id}_income`} stackId="income" barSize={16} isAnimationActive={false}>
+                                        {overallChartInfo.chartData.map((entry, i) => (
+                                            <Cell key={`cell-inc-${p.id}-${i}`} fill={entry.isPastOrCurrent ? color.incomeDark : color.incomeLight} />
+                                        ))}
+                                    </Bar>,
+                                    <Bar key={`exp-${p.id}`} dataKey={`${p.id}_expense`} stackId="expense" barSize={16} isAnimationActive={false}>
+                                        {overallChartInfo.chartData.map((entry, i) => (
+                                            <Cell key={`cell-exp-${p.id}-${i}`} fill={entry.isPastOrCurrent ? color.expenseDark : color.expenseLight} />
+                                        ))}
+                                    </Bar>
+                                ];
+                            })}
+
+                            <Line type="monotone" dataKey="actualTotal" stroke="#10b981" strokeWidth={2} dot={{ r: 3, fill: '#10b981', strokeWidth: 1, stroke: '#fff' }} connectNulls={false} isAnimationActive={false} />
+                            <Line type="monotone" dataKey="projectedTotal" stroke="#6ee7b7" strokeWidth={2} strokeDasharray="3 3" dot={{ r: 3, fill: '#6ee7b7', strokeWidth: 1, stroke: '#fff' }} connectNulls={false} isAnimationActive={false} />
                         </ComposedChart>
                         </ResponsiveContainer>
                     </div>
-                    <div className="flex justify-center gap-6 text-sm font-bold text-gray-500 mt-6 flex-wrap mb-8">
+
+                    {/* 全体収支の物件凡例 */}
+                    <div className="flex justify-center gap-4 text-xs font-bold text-gray-500 mt-2 flex-wrap px-4">
+                        {properties.map((p, idx) => {
+                            const color = PROPERTY_COLORS[idx % PROPERTY_COLORS.length];
+                            return (
+                                <div key={p.id} className="flex items-center gap-1.5">
+                                    <div className="w-3 h-3 rounded-sm" style={{ backgroundColor: color.incomeDark }}></div>
+                                    <span className="truncate max-w-[120px]" title={p.name}>{p.name}</span>
+                                </div>
+                            )
+                        })}
+                    </div>
+
+                    <div className="flex justify-center gap-6 text-sm font-bold text-gray-500 mt-4 flex-wrap mb-8">
                         <div className="flex items-center gap-1.5">
-                            <div className="flex"><div className="w-3 h-3 rounded-l-full bg-blue-500"></div><div className="w-3 h-3 rounded-r-full bg-blue-200"></div></div>
-                            {t('incomeActProj')}
-                        </div>
-                        <div className="flex items-center gap-1.5">
-                            <div className="flex"><div className="w-3 h-3 rounded-l-full bg-red-400"></div><div className="w-3 h-3 rounded-r-full bg-red-200"></div></div>
-                            {t('expenseActProj')}
+                            <div className="flex"><div className="w-3 h-3 rounded-l-sm bg-gray-400"></div><div className="w-3 h-3 rounded-r-sm bg-gray-200"></div></div>
+                            濃い色: 実績 / 薄い色: 予定
                         </div>
                         <div className="flex items-center gap-1.5">
                             <div className="flex"><div className="w-4 h-1 bg-green-500 mt-1"></div><div className="w-4 h-1 border-t-2 border-dashed border-green-300 mt-1 ml-0.5"></div></div>
                             {t('totalActProj')}
                         </div>
                     </div>
+
                     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                         <div className="lg:col-span-2 grid grid-cols-2 gap-4">
                             <div className="bg-gray-50 p-5 rounded-xl border border-gray-100">
@@ -1273,10 +1339,18 @@
                                 <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#64748b' }} tickFormatter={(val) => val === 0 ? '0' : `${Math.abs(val) / 10000}万`} />
                                 <Tooltip content={<CustomTooltip labelActual={t('actualDesc')} labelProjected={t('projectedDesc')} labelBalance={t('totalBalance')} />} cursor={{fill: '#f8fafc'}} />
                                 <ReferenceLine y={0} stroke="#cbd5e1" strokeWidth={2} />
-                                <Bar dataKey="actualIncome" fill="#3b82f6" radius={[4, 4, 0, 0]} barSize={20} isAnimationActive={false} />
-                                <Bar dataKey="actualExpense" fill="#f87171" radius={[0, 0, 4, 4]} barSize={20} isAnimationActive={false} />
-                                <Bar dataKey="projectedIncome" fill="#bfdbfe" radius={[4, 4, 0, 0]} barSize={20} isAnimationActive={false} />
-                                <Bar dataKey="projectedExpense" fill="#fecaca" radius={[0, 0, 4, 4]} barSize={20} isAnimationActive={false} />
+                                
+                                <Bar dataKey="income" stackId="income" barSize={20} isAnimationActive={false}>
+                                    {performanceData.chartData.map((entry, index) => (
+                                        <Cell key={`cell-inc-${index}`} fill={entry.isPastOrCurrent ? '#3b82f6' : '#bfdbfe'} />
+                                    ))}
+                                </Bar>
+                                <Bar dataKey="expense" stackId="expense" barSize={20} isAnimationActive={false}>
+                                    {performanceData.chartData.map((entry, index) => (
+                                        <Cell key={`cell-exp-${index}`} fill={entry.isPastOrCurrent ? '#ef4444' : '#fecaca'} />
+                                    ))}
+                                </Bar>
+
                                 <Line type="monotone" dataKey="actualTotal" stroke="#10b981" strokeWidth={3} dot={{ r: 4, fill: '#10b981', strokeWidth: 2, stroke: '#fff' }} connectNulls={false} isAnimationActive={false} />
                                 <Line type="monotone" dataKey="projectedTotal" stroke="#6ee7b7" strokeWidth={3} strokeDasharray="5 5" dot={{ r: 4, fill: '#6ee7b7', strokeWidth: 2, stroke: '#fff' }} connectNulls={false} isAnimationActive={false} />
                             </ComposedChart>
@@ -1284,12 +1358,16 @@
                         </div>
                         <div className="flex justify-center gap-6 text-sm font-bold text-gray-500 mt-6 flex-wrap">
                                 <div className="flex items-center gap-1.5">
-                                    <div className="flex"><div className="w-3 h-3 rounded-l-full bg-blue-500"></div><div className="w-3 h-3 rounded-r-full bg-blue-200"></div></div>
-                                    {t('incomeActProj')}
+                                    <div className="flex"><div className="w-3 h-3 rounded-sm bg-blue-500"></div></div>
+                                    収入
                                 </div>
                                 <div className="flex items-center gap-1.5">
-                                    <div className="flex"><div className="w-3 h-3 rounded-l-full bg-red-400"></div><div className="w-3 h-3 rounded-r-full bg-red-200"></div></div>
-                                    {t('expenseActProj')}
+                                    <div className="flex"><div className="w-3 h-3 rounded-sm bg-red-400"></div></div>
+                                    支出
+                                </div>
+                                <div className="flex items-center gap-1.5">
+                                    <div className="flex"><div className="w-3 h-3 rounded-l-sm bg-gray-400"></div><div className="w-3 h-3 rounded-r-sm bg-gray-200"></div></div>
+                                    濃い色: 実績 / 薄い色: 予定
                                 </div>
                                 <div className="flex items-center gap-1.5">
                                     <div className="flex"><div className="w-4 h-1 bg-green-500 mt-1"></div><div className="w-4 h-1 border-t-2 border-dashed border-green-300 mt-1 ml-0.5"></div></div>
@@ -1478,4 +1556,5 @@
         root.render(<App />);
     </script>
 </body>
+</html>
 </html>
